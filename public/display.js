@@ -105,21 +105,35 @@ function fitTvTables(root) {
   if (!body) return;
   const rows = body.querySelectorAll('.rev-row');
   if (!rows.length) return;
-  const tableRow = body.closest('.rev-index-table-row');
-  const head = tableRow?.querySelector('.rev-table-head');
-  const panel = slide.querySelector('.rev-index-body, .rev-board-body, .rev-monthly-body');
-  if (!panel || !tableRow) return;
-  const panelRect = panel.getBoundingClientRect();
-  const headH = head?.offsetHeight || 32;
-  const sectionHead = panel.querySelector('.rev-section-head');
-  const sectionH = sectionHead?.offsetHeight || 0;
-  const usedAbove = tableRow.getBoundingClientRect().top - panelRect.top;
-  const available = panelRect.height - usedAbove - sectionH - 4;
-  const rowH = Math.max(28, Math.min(44, Math.floor((available - headH) / rows.length)));
+
+  const bodyH = body.clientHeight;
+  if (bodyH < 20) {
+    requestAnimationFrame(() => fitTvTables(slide));
+    return;
+  }
+
+  const rowH = Math.max(40, Math.floor(bodyH / rows.length));
+  const fontPx = Math.min(15, Math.max(11, Math.round(rowH * 0.32)));
+  const rankSize = Math.min(28, Math.max(22, Math.round(rowH * 0.45)));
+
   rows.forEach((row) => {
+    row.style.height = rowH + 'px';
     row.style.minHeight = rowH + 'px';
-    row.style.paddingTop = row.style.paddingBottom = Math.max(4, Math.floor((rowH - 20) / 2)) + 'px';
+    row.style.maxHeight = 'none';
+    row.style.fontSize = fontPx + 'px';
+    const pad = Math.max(6, Math.floor((rowH - fontPx) / 2));
+    row.style.paddingTop = pad + 'px';
+    row.style.paddingBottom = pad + 'px';
+    const rank = row.querySelector('.rev-rank');
+    if (rank) {
+      rank.style.width = rankSize + 'px';
+      rank.style.height = rankSize + 'px';
+      rank.style.fontSize = Math.max(10, fontPx - 1) + 'px';
+    }
+    const bar = row.querySelector('.rev-share-bar');
+    if (bar) bar.style.width = bar.dataset.pct + '%';
   });
+
   const amount = slide.querySelector('.rev-index-amount');
   if (amount) fitAmountFont(amount);
 }
@@ -408,7 +422,7 @@ function buildYtdSlide(data) {
           <span>#</span><span>Product Name</span><span class="col-money">Premium Amount</span><span>Share</span>
         </div>
         <div class="rev-table-body">
-          ${data.topAccounts.map((a, i) => {
+          ${[...data.accounts].sort((a, b) => b.amount - a.amount).slice(0, 8).map((a, i) => {
             const pct = ((a.amount / data.ytdTotal) * 100).toFixed(1);
             const rank = i + 1;
             return `
@@ -417,6 +431,7 @@ function buildYtdSlide(data) {
                 <span class="rev-name" title="${a.name}"><span class="rev-code">${a.code}</span>${a.name}</span>
                 <span class="rev-price col-money">${moneyHtml(a.amount)}</span>
                 <span class="rev-chg up">${pct}%</span>
+                <div class="rev-share-bar" data-pct="${pct}"></div>
               </div>`;
           }).join('')}
         </div>
@@ -426,6 +441,8 @@ function buildYtdSlide(data) {
   requestAnimationFrame(() => {
     animateCount(el.querySelector('.rev-index-amount'), data.ytdTotal);
     fitTvTables(el);
+    setTimeout(() => fitTvTables(el), 100);
+    setTimeout(() => fitTvTables(el), 2200);
   });
   return el;
 }
