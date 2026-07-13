@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "pack": "node scripts/pack.js"
+    "dev": "node server.js",
+    "build": "node scripts/build.js",
+    "pack": "node scripts/build.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
