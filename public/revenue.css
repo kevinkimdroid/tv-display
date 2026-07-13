@@ -1,0 +1,249 @@
+/* Revenue dashboard slides */
+.rev-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(24px, 3vw, 48px) clamp(28px, 4vw, 56px);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+  background: radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.12), transparent 50%),
+              radial-gradient(ellipse at 80% 100%, rgba(168,85,247,0.08), transparent 50%),
+              #050508;
+  overflow: hidden;
+}
+.rev-slide.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.rev-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: clamp(20px, 2.5vw, 36px);
+  flex-shrink: 0;
+}
+.rev-title {
+  font-size: clamp(20px, 2.2vw, 32px);
+  font-weight: 600;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: -0.02em;
+}
+.rev-subtitle {
+  font-size: clamp(12px, 1.1vw, 15px);
+  color: rgba(255,255,255,0.4);
+  margin-top: 4px;
+}
+.rev-year-badge {
+  padding: 8px 18px;
+  border-radius: 100px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.35);
+  color: #a5b4fc;
+  font-size: clamp(13px, 1.2vw, 16px);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* YTD slide */
+.rev-ytd-hero {
+  text-align: center;
+  padding: clamp(16px, 2vw, 32px) 0;
+  flex-shrink: 0;
+}
+.rev-ytd-label {
+  font-size: clamp(13px, 1.2vw, 16px);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.45);
+  font-weight: 500;
+}
+.rev-ytd-amount {
+  font-size: clamp(36px, 5.5vw, 72px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #fff 30%, #a5b4fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 8px 0;
+  line-height: 1.1;
+}
+.rev-ytd-meta {
+  font-size: clamp(12px, 1.1vw, 15px);
+  color: rgba(255,255,255,0.35);
+}
+
+.rev-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.2vw, 16px);
+  justify-content: center;
+  min-height: 0;
+}
+.rev-bar-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 28%) 1fr minmax(80px, 12%);
+  align-items: center;
+  gap: 14px;
+}
+.rev-bar-name {
+  font-size: clamp(11px, 1vw, 14px);
+  color: rgba(255,255,255,0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rev-bar-track {
+  height: clamp(18px, 2vw, 28px);
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.rev-bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #6366f1, #a855f7);
+  width: 0%;
+  transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 20px rgba(99,102,241,0.4);
+}
+.rev-bar-amount {
+  font-size: clamp(11px, 1vw, 14px);
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  text-align: right;
+}
+
+/* Monthly slide */
+.rev-monthly-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: clamp(12px, 1.5vw, 20px);
+  align-content: center;
+  min-height: 0;
+}
+.rev-month-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: clamp(14px, 1.5vw, 20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.3s, transform 0.3s;
+}
+.rev-month-card:hover {
+  border-color: rgba(99,102,241,0.3);
+}
+.rev-month-label {
+  font-size: clamp(12px, 1.1vw, 15px);
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+.rev-month-bar-wrap {
+  width: 100%;
+  height: clamp(60px, 8vw, 100px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.rev-month-bar {
+  width: 50%;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(to top, #6366f1, #818cf8);
+  height: 0%;
+  transition: height 1s cubic-bezier(0.22, 1, 0.36, 1);
+  min-height: 4px;
+}
+.rev-month-amount {
+  font-size: clamp(10px, 0.95vw, 13px);
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+}
+.rev-growth {
+  font-size: clamp(10px, 0.9vw, 12px);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+.rev-growth.up {
+  color: #4ade80;
+  background: rgba(74,222,128,0.12);
+}
+.rev-growth.down {
+  color: #f87171;
+  background: rgba(248,113,113,0.12);
+}
+.rev-growth.neutral {
+  color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.06);
+}
+
+/* Accounts slide */
+.rev-accounts-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: clamp(10px, 1.2vw, 16px);
+  align-content: start;
+  overflow: hidden;
+  min-height: 0;
+}
+.rev-account-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: clamp(12px, 1.2vw, 18px);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+.rev-account-card:hover {
+  border-color: rgba(255,255,255,0.14);
+}
+.rev-account-code {
+  font-size: clamp(11px, 1vw, 13px);
+  font-weight: 700;
+  color: #818cf8;
+  background: rgba(99,102,241,0.12);
+  padding: 6px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.rev-account-info { flex: 1; min-width: 0; }
+.rev-account-name {
+  font-size: clamp(11px, 1vw, 14px);
+  color: rgba(255,255,255,0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rev-account-amount {
+  font-size: clamp(13px, 1.2vw, 17px);
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.rev-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.4);
+  font-size: clamp(14px, 1.4vw, 18px);
+}
+.rev-error {
+  color: #f87171;
+  text-align: center;
+  padding: 40px;
+}

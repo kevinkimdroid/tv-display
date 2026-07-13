@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>TV Display – Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #08090d;
+    --surface: #111318;
+    --surface-2: #181b23;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.14);
+    --text: #f0f1f4;
+    --muted: #7c8494;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --accent-glow: rgba(99,102,241,0.25);
+    --purple: #a855f7;
+    --danger: #f87171;
+    --success: #4ade80;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99,102,241,0.12), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(168,85,247,0.08), transparent);
+  }
+
+  /* Header */
+  header {
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(8,9,13,0.85);
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 20px var(--accent-glow);
+  }
+  header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  header p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .header-actions { display: flex; gap: 10px; }
+  .btn-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+  .btn-display:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px var(--accent-glow);
+  }
+
+  /* Layout */
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border-hover); }
+  .stat-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    margin-top: 4px;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--text), var(--muted));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-card.accent .stat-value {
+    background: linear-gradient(135deg, var(--accent-light), var(--purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  /* Upload zone */
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .dropzone {
+    border: 2px dashed var(--border-hover);
+    border-radius: var(--radius);
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s, transform 0.2s;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+  .dropzone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, var(--accent-glow), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--accent);
+    background: rgba(99,102,241,0.04);
+    transform: translateY(-1px);
+  }
+  .dropzone:hover::before, .dropzone.drag::before { opacity: 1; }
+  .dropzone-inner { position: relative; z-index: 1; }
+  .dropzone-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 16px;
+    border-radius: 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    transition: transform 0.2s;
+  }
+  .dropzone:hover .dropzone-icon { transform: scale(1.05); }
+  .dropzone strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .dropzone span { font-size: 14px; color: var(--muted); }
+  input[type=file] { display: none; }
+
+  /* Playlist */
+  .playlist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 36px 0 14px;
+  }
+  #playlist { list-style: none; margin: 0; padding: 0; }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .item:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+  .thumb-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .thumb {
+    width: 72px; height: 72px;
+    border-radius: 10px;
+    background: #000;
+    object-fit: cover;
+    display: block;
+  }
+  .type-badge {
+    position: absolute;
+    bottom: 4px; left: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    color: #fff;
+  }
+  .type-badge.photo { color: #a5b4fc; }
+  .type-badge.video { color: #c4b5fd; }
+  .info { flex: 1; min-width: 0; }
+  .name {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .duration-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .duration-input {
+    width: 52px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 13px;
+    font-family: inherit;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .duration-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  button:hover:not(:disabled) {
+    background: #22262f;
+    border-color: var(--border-hover);
+  }
+  button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  button.danger {
+    background: transparent;
+    color: var(--danger);
+    border-color: transparent;
+  }
+  button.danger:hover:not(:disabled) {
+    background: rgba(248,113,113,0.1);
+    border-color: rgba(248,113,113,0.2);
+  }
+  .order-controls { display: flex; flex-direction: column; gap: 3px; }
+  .order-controls button { padding: 3px 10px; font-size: 11px; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .empty-state-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-state p { margin: 0; font-size: 14px; }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    padding: 12px 22px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    z-index: 100;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  #toast.success { border-color: rgba(74,222,128,0.3); }
+  #toast.error { border-color: rgba(248,113,113,0.3); }
+
+  /* Revenue settings */
+  .settings-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+  .settings-panel h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .settings-panel p {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 20px;
+  }
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .toggle-row input[type=checkbox] {
+    width: 18px; height: 18px;
+    accent-color: var(--accent);
+  }
+  .toggle-row label {
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .slide-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .slide-checks label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .slide-checks input { accent-color: var(--accent); }
+  .settings-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    padding: 9px 18px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    color: #fff;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-secondary {
+    padding: 9px 18px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .revenue-preview {
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .revenue-preview strong { color: var(--accent-light); }
+
+  @media (max-width: 600px) {
+    header { padding: 16px 20px; flex-wrap: wrap; gap: 12px; }
+    .stats { grid-template-columns: 1fr; }
+    .item { flex-wrap: wrap; }
+    .duration-row { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">📺</div>
+    <div>
+      <h1>TV Display</h1>
+      <p>Manage your slideshow content</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <a class="btn-display" href="/" target="_blank">▶ Open Display</a>
+  </div>
+</header>
+
+<main>
+  <div class="stats">
+    <div class="stat-card accent">
+      <div class="stat-label">Total Items</div>
+      <div class="stat-value" id="statTotal">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Photos</div>
+      <div class="stat-value" id="statPhotos">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Videos</div>
+      <div class="stat-value" id="statVideos">0</div>
+    </div>
+  </div>
+
+  <div class="settings-panel">
+    <h2>Revenue Dashboard</h2>
+    <p>Live premium revenue from Oracle ERP — rotates on the TV display with monthly growth.</p>
+
+    <div class="toggle-row">
+      <input type="checkbox" id="revEnabled" checked />
+      <label for="revEnabled">Show revenue slides on TV display</label>
+    </div>
+
+    <div class="settings-grid">
+      <div class="field">
+        <label for="revYear">Year</label>
+        <input type="text" id="revYear" value="2026" maxlength="4" />
+      </div>
+      <div class="field">
+        <label for="revDuration">Seconds per slide</label>
+        <input type="number" id="revDuration" value="14" min="5" max="60" />
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:12px">
+      <label>Slides to show</label>
+    </div>
+    <div class="slide-checks">
+      <label><input type="checkbox" id="slideYtd" checked /> YTD Overview</label>
+      <label><input type="checkbox" id="slideMonthly" checked /> Monthly Trend + Growth</label>
+      <label><input type="checkbox" id="slideAccounts" checked /> Account Breakdown</label>
+    </div>
+
+    <div class="settings-actions">
+      <button class="btn-primary" id="saveRevenue">Save Settings</button>
+      <button class="btn-secondary" id="refreshRevenue">Refresh Data Now</button>
+    </div>
+
+    <div class="revenue-preview" id="revenuePreview">Loading preview...</div>
+  </div>
+
+  <div class="section-label">Upload Media</div>
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-inner">
+      <div class="dropzone-icon">⬆</div>
+      <strong>Drop files here or click to browse</strong>
+      <span>Photos and videos · up to 500 MB each</span>
+    </div>
+    <input type="file" id="fileInput" accept="image/*,video/*" multiple />
+  </div>
+
+  <div class="playlist-header">
+    <div class="section-label" style="margin:0">Playlist</div>
+  </div>
+  <ul id="playlist"></ul>
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <div class="empty-state-icon">🎬</div>
+    <p>No media yet — upload photos or videos above to get started.</p>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

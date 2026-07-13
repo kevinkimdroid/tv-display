@@ -1,0 +1,16 @@
+{
+  "name": "tv-display",
+  "version": "1.0.0",
+  "description": "Node.js digital signage app - display photos & videos on a TV with a remote admin panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "pack": "node scripts/pack.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "oracledb": "^7.0.0"
+  }
+}

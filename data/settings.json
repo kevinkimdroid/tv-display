@@ -1,0 +1,8 @@
+{
+  "revenue": {
+    "enabled": true,
+    "year": "2026",
+    "slideDuration": 14,
+    "slides": ["ytd", "monthly", "accounts"]
+  }
+}
