@@ -91,11 +91,37 @@ function fitAmountFont(el) {
   if (!wrap) return;
   el.style.fontSize = '';
   let size = parseFloat(getComputedStyle(el).fontSize);
-  const minSize = 32;
-  while (measureEl.scrollWidth > wrap.clientWidth - 12 && size > minSize) {
+  const minSize = 22;
+  while (measureEl.scrollWidth > wrap.clientWidth - 8 && size > minSize) {
     size -= 1;
     el.style.fontSize = size + 'px';
   }
+}
+
+function fitTvTables(root) {
+  const slide = root || currentEl;
+  if (!slide?.classList?.contains('rev-slide')) return;
+  const body = slide.querySelector('.rev-table-body');
+  if (!body) return;
+  const rows = body.querySelectorAll('.rev-row');
+  if (!rows.length) return;
+  const tableRow = body.closest('.rev-index-table-row');
+  const head = tableRow?.querySelector('.rev-table-head');
+  const panel = slide.querySelector('.rev-index-body, .rev-board-body, .rev-monthly-body');
+  if (!panel || !tableRow) return;
+  const panelRect = panel.getBoundingClientRect();
+  const headH = head?.offsetHeight || 32;
+  const sectionHead = panel.querySelector('.rev-section-head');
+  const sectionH = sectionHead?.offsetHeight || 0;
+  const usedAbove = tableRow.getBoundingClientRect().top - panelRect.top;
+  const available = panelRect.height - usedAbove - sectionH - 4;
+  const rowH = Math.max(28, Math.min(44, Math.floor((available - headH) / rows.length)));
+  rows.forEach((row) => {
+    row.style.minHeight = rowH + 'px';
+    row.style.paddingTop = row.style.paddingBottom = Math.max(4, Math.floor((rowH - 20) / 2)) + 'px';
+  });
+  const amount = slide.querySelector('.rev-index-amount');
+  if (amount) fitAmountFont(amount);
 }
 
 const REVENUE_POLL_MS = 60 * 1000;
@@ -125,6 +151,7 @@ function refreshCurrentDashboard() {
   currentEl = newEl;
   old.classList.remove('active');
   setTimeout(() => old.remove(), 400);
+  requestAnimationFrame(() => fitTvTables(newEl));
 }
 
 function animateBars(container, selector, attr, suffix = '%') {
@@ -322,9 +349,8 @@ function panelHeader(code, title, sub, badge) {
   return `
     <div class="rev-header">
       <div class="rev-header-left">
-        <img class="rev-header-logo" src="geminia-mark.png" alt="" />
         <div class="rev-index-code">${code}</div>
-        <div>
+        <div class="rev-header-text">
           <div class="rev-title">${title}</div>
           <div class="rev-subtitle">${sub}</div>
         </div>
@@ -350,28 +376,29 @@ function buildYtdSlide(data) {
     <div class="rev-index-body">
       ${milestone ? `<div class="rev-milestone ${milestone.cls}">${milestone.text}</div>` : ''}
 
-      <div class="rev-hero-card">
-        <div class="rev-index-label">Total Premium Collected</div>
-        <div class="rev-index-amount-wrap">
-          <div class="rev-index-amount">${moneyHtml(0, { hero: true })}</div>
+      <div class="rev-hero-row">
+        <div class="rev-hero-card">
+          <div class="rev-index-label">Total Premium Collected</div>
+          <div class="rev-index-amount-wrap">
+            <div class="rev-index-amount">${moneyHtml(0, { hero: true })}</div>
+          </div>
+          <div class="rev-exact-tag">Exact posted figures · Oracle ERP</div>
         </div>
-        <div class="rev-exact-tag">Exact posted figures · verified from Oracle ERP</div>
-      </div>
-
-      <div class="rev-insights">
-        <div class="rev-insight">
-          <div class="rev-insight-label">Month on Month</div>
-          <div class="rev-insight-val ${chgClass}">${chgText}</div>
-        </div>
-        ${top ? `
-        <div class="rev-insight highlight">
-          <div class="rev-insight-label">Top Account</div>
-          <div class="rev-insight-name">${top.name}</div>
-          <div class="rev-insight-amt">${moneyHtml(top.amount, { sm: true })}</div>
-        </div>` : ''}
-        <div class="rev-insight">
-          <div class="rev-insight-label">Portfolio</div>
-          <div class="rev-insight-val num">${data.accountCount} accounts · ${data.monthCount} periods</div>
+        <div class="rev-insights">
+          <div class="rev-insight">
+            <div class="rev-insight-label">Month on Month</div>
+            <div class="rev-insight-val ${chgClass}">${chgText}</div>
+          </div>
+          ${top ? `
+          <div class="rev-insight highlight">
+            <div class="rev-insight-label">Top Account</div>
+            <div class="rev-insight-name">${top.name}</div>
+            <div class="rev-insight-amt">${moneyHtml(top.amount, { sm: true })}</div>
+          </div>` : ''}
+          <div class="rev-insight">
+            <div class="rev-insight-label">Portfolio</div>
+            <div class="rev-insight-val num">${data.accountCount} accounts · ${data.monthCount} periods</div>
+          </div>
         </div>
       </div>
 
@@ -398,6 +425,7 @@ function buildYtdSlide(data) {
 
   requestAnimationFrame(() => {
     animateCount(el.querySelector('.rev-index-amount'), data.ytdTotal);
+    fitTvTables(el);
   });
   return el;
 }
@@ -532,6 +560,10 @@ function showCurrent() {
   el.classList.add('active');
   currentEl = el;
 
+  if (item.type === 'dashboard') {
+    requestAnimationFrame(() => fitTvTables(el));
+  }
+
   if (prevEl) {
     prevEl.classList.remove('active');
     setTimeout(() => prevEl.remove(), 900);
@@ -560,3 +592,7 @@ document.addEventListener('click', () => {
 });
 
 setTimeout(() => fullscreenHint.classList.add('hidden'), 6000);
+
+window.addEventListener('resize', () => {
+  if (currentEl?.classList?.contains('rev-slide')) fitTvTables(currentEl);
+});
