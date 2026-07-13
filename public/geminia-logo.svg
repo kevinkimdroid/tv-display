@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 72" role="img" aria-label="Geminia Life Insurance">
+  <defs>
+    <linearGradient id="gCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4DC4F5"/>
+      <stop offset="100%" stop-color="#00AEEF"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Cyan G mark -->
+  <path d="M36 6 C18 6 6 20 6 36 C6 52 18 66 36 66 C50 66 60 58 64 46 L48 46 C45 52 40 54 36 54 C26 54 20 46 20 36 C20 26 26 18 36 18 C44 18 50 22 52 28 L36 28 L36 36 L60 36 L60 26 C56 12 46 6 36 6Z" fill="url(#gCyan)" filter="url(#glow)"/>
+  <circle cx="36" cy="16" r="5" fill="#004A99"/>
+  <!-- White brand text (visible on dark bg) -->
+  <text x="78" y="34" font-family="Arial Black, Arial, sans-serif" font-size="26" font-weight="900" font-style="italic" fill="#FFFFFF" letter-spacing="2">GEMINIA</text>
+  <text x="78" y="56" font-family="Arial, sans-serif" font-size="14" font-weight="700" font-style="italic" fill="#00AEEF" letter-spacing="2.5">LIFE INSURANCE</text>
+</svg>

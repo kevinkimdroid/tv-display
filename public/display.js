@@ -10,6 +10,7 @@ const tickerTrack = document.getElementById('ticker-track');
 const progressWrap = document.getElementById('progress-wrap');
 const progressBar = document.getElementById('progress-bar');
 const fullscreenHint = document.getElementById('fullscreen-hint');
+const dataUpdatedEl = document.getElementById('data-updated');
 
 let playlist = [];
 let settings = { revenue: { enabled: false } };
@@ -31,34 +32,51 @@ const SLIDE_LABELS = {
   video: 'MEDIA'
 };
 
-const MOTIVATIONAL = [
-  'Every policy powers our mission',
-  'Together we protect Kenyan families',
-  'Your effort. Our growth. Kenya\'s security.',
-  'Premium collected = Lives protected',
-  'Geminia Life — Building trust every day'
-];
-
 function formatMoney(n) { return fmt.format(Math.round(n)); }
 
+function moneyHtml(n, opts = {}) {
+  const formatted = fmt.format(Math.round(n)).replace(/\u00a0/g, ' ');
+  const spaceIdx = formatted.indexOf(' ');
+  const cls = ['money', opts.hero && 'money-hero', opts.accent && 'accent', opts.sm && 'sm'].filter(Boolean).join(' ');
+  if (spaceIdx === -1) {
+    return `<span class="${cls}"><span class="money-num">${formatted}</span></span>`;
+  }
+  const currency = formatted.slice(0, spaceIdx);
+  const value = formatted.slice(spaceIdx + 1);
+  return `<span class="${cls}"><span class="money-cur">${currency}</span><span class="money-num">${value}</span></span>`;
+}
+
+function formatMoneyValue(n) {
+  const formatted = fmt.format(Math.round(n)).replace(/\u00a0/g, ' ');
+  const spaceIdx = formatted.indexOf(' ');
+  return spaceIdx === -1 ? formatted : formatted.slice(spaceIdx + 1);
+}
+
 function getMilestone(total) {
-  if (total >= 1_000_000_000) return { text: '🏆 OVER ONE BILLION SHILLINGS IN PREMIUM', cls: 'gold' };
-  if (total >= 500_000_000) return { text: '⭐ HALF A BILLION MILESTONE REACHED', cls: 'silver' };
-  if (total >= 100_000_000) return { text: '✦ KES 100 MILLION+ AND COUNTING', cls: 'green' };
+  if (total >= 1_000_000_000) return { text: 'Over One Billion Shillings in Premium', cls: 'gold' };
+  if (total >= 500_000_000) return { text: 'Half a Billion Milestone Reached', cls: 'silver' };
+  if (total >= 100_000_000) return { text: 'KES 100 Million and Counting', cls: 'green' };
   return null;
 }
 
 // --- Animated count-up (exact amounts only) ------------------------------
 
 function animateCount(el, target, duration = 2000) {
+  const numEl = el.querySelector('.money-num');
   const start = performance.now();
   function tick(now) {
     const t = Math.min((now - start) / duration, 1);
     const ease = 1 - Math.pow(1 - t, 4);
-    el.textContent = formatMoney(target * ease);
+    const current = Math.round(target * ease);
+    if (numEl) {
+      numEl.textContent = formatMoneyValue(current);
+    } else {
+      el.textContent = formatMoney(current);
+    }
     if (t < 1) requestAnimationFrame(tick);
     else {
-      el.textContent = formatMoney(target);
+      if (numEl) numEl.textContent = formatMoneyValue(target);
+      else el.innerHTML = moneyHtml(target);
       el.classList.add('flash', 'landed');
       fitAmountFont(el);
       setTimeout(() => el.classList.remove('flash'), 800);
@@ -69,14 +87,44 @@ function animateCount(el, target, duration = 2000) {
 
 function fitAmountFont(el) {
   const wrap = el.closest('.rev-index-amount-wrap') || el.parentElement;
+  const measureEl = el.querySelector('.money') || el;
   if (!wrap) return;
   el.style.fontSize = '';
   let size = parseFloat(getComputedStyle(el).fontSize);
-  const minSize = 22;
-  while (el.scrollWidth > wrap.clientWidth - 8 && size > minSize) {
+  const minSize = 32;
+  while (measureEl.scrollWidth > wrap.clientWidth - 12 && size > minSize) {
     size -= 1;
     el.style.fontSize = size + 'px';
   }
+}
+
+const REVENUE_POLL_MS = 60 * 1000;
+
+function updateDataTimestamp(fresh = false) {
+  if (!dataUpdatedEl) return;
+  if (!revenueData?.fetchedAt) {
+    dataUpdatedEl.textContent = 'Connecting…';
+    dataUpdatedEl.classList.remove('fresh');
+    return;
+  }
+  const d = new Date(revenueData.fetchedAt);
+  dataUpdatedEl.textContent = 'Updated ' + d.toLocaleTimeString('en-GB', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  });
+  dataUpdatedEl.classList.toggle('fresh', fresh);
+  if (fresh) setTimeout(() => dataUpdatedEl.classList.remove('fresh'), 3000);
+}
+
+function refreshCurrentDashboard() {
+  const item = slideList[currentIndex];
+  if (item?.type !== 'dashboard' || !currentEl?.classList?.contains('rev-slide')) return;
+  const newEl = buildDashboardEl(item.dashboardType);
+  newEl.classList.add('active');
+  stage.appendChild(newEl);
+  const old = currentEl;
+  currentEl = newEl;
+  old.classList.remove('active');
+  setTimeout(() => old.remove(), 400);
 }
 
 function animateBars(container, selector, attr, suffix = '%') {
@@ -197,15 +245,26 @@ async function fetchSettings() {
   } catch (err) { console.error('Failed to fetch settings', err); }
 }
 
+function revenueFingerprint(data) {
+  if (!data) return '';
+  const { fetchedAt, ...rest } = data;
+  return JSON.stringify(rest);
+}
+
 async function fetchRevenue() {
   try {
-    const res = await fetch('/api/revenue/dashboard', { cache: 'no-store' });
+    const res = await fetch('/api/revenue/dashboard?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('Revenue fetch failed');
+    const prev = revenueFingerprint(revenueData);
     revenueData = await res.json();
     buildFeed(revenueData);
+    updateDataTimestamp(true);
+    return prev !== revenueFingerprint(revenueData);
   } catch (err) {
     console.error('Failed to fetch revenue', err);
     revenueData = null;
+    updateDataTimestamp();
+    return false;
   }
 }
 
@@ -218,15 +277,29 @@ async function fetchPlaylist() {
 
 async function refreshAll() {
   await fetchSettings();
-  await Promise.all([fetchRevenue(), fetchPlaylist()]);
+  const changed = await fetchRevenue();
+  await fetchPlaylist();
   const hadSlides = slideList.length > 0;
   const ok = rebuildSlides();
   if (ok && !hadSlides) { currentIndex = 0; showCurrent(); }
   else if (ok && !currentEl) { currentIndex = 0; showCurrent(); }
+  else if (ok && changed && currentEl?.classList?.contains('rev-slide')) refreshCurrentDashboard();
   else if (ok && currentEl?.classList?.contains('rev-slide')) showCurrent();
   else updateHud();
 }
 
+async function pollRevenue() {
+  const changed = await fetchRevenue();
+  if (slideList.length > 0) {
+    if (changed) {
+      rebuildSlides();
+      if (currentEl?.classList?.contains('rev-slide')) refreshCurrentDashboard();
+      else updateHud();
+    }
+  }
+}
+
+setInterval(pollRevenue, REVENUE_POLL_MS);
 setInterval(refreshAll, 5 * 60 * 1000);
 setInterval(fetchPlaylist, 10000);
 
@@ -236,8 +309,8 @@ function updateHud() {
   const label = item.type === 'dashboard'
     ? SLIDE_LABELS[item.dashboardType]
     : SLIDE_LABELS[item.type] || 'FEED';
-  slideLabelEl.textContent = '◆ ' + label + ' ◆';
-  counterEl.textContent = `SCREEN ${currentIndex + 1} / ${slideList.length}`;
+  slideLabelEl.textContent = label;
+  counterEl.textContent = `${currentIndex + 1} / ${slideList.length}`;
   dotsEl.innerHTML = slideList.map((_, i) =>
     `<div class="dot${i === currentIndex ? ' active' : ''}"></div>`
   ).join('');
@@ -249,6 +322,7 @@ function panelHeader(code, title, sub, badge) {
   return `
     <div class="rev-header">
       <div class="rev-header-left">
+        <img class="rev-header-logo" src="geminia-mark.png" alt="" />
         <div class="rev-index-code">${code}</div>
         <div>
           <div class="rev-title">${title}</div>
@@ -265,65 +339,56 @@ function buildYtdSlide(data) {
   const latest = data.monthly[data.monthly.length - 1];
   const latestGrowth = latest?.growth;
   const chgClass = latestGrowth == null ? 'up' : (latestGrowth >= 0 ? 'up' : 'down');
-  const chgText = latestGrowth == null ? '▲ LIVE FROM ORACLE' : (latestGrowth >= 0 ? '▲' : '▼') + ' ' + Math.abs(latestGrowth) + '% vs last month';
+  const chgText = latestGrowth == null
+    ? 'Live from Oracle ERP'
+    : `${latestGrowth >= 0 ? '+' : '−'}${Math.abs(latestGrowth)}% month on month`;
   const milestone = getMilestone(data.ytdTotal);
   const top = data.topAccounts[0];
-  const quote = MOTIVATIONAL[Math.floor(Date.now() / 30000) % MOTIVATIONAL.length];
 
   el.innerHTML = `
-    ${milestone ? `<div class="rev-milestone ${milestone.cls}">${milestone.text}</div>` : ''}
-    ${panelHeader('YTD', 'Year-to-Date Premium Summary', quote, data.year)}
+    ${panelHeader('YTD', 'Year-to-Date Premium Summary', 'Posted premium · ' + data.year, data.year)}
     <div class="rev-index-body">
-      <div class="rev-panel rev-index-hero">
-        <div class="rev-index-hero-left">
-          <div class="rev-index-label">Total Premium Collected — Exact Figure</div>
-          <div class="rev-index-name">YTD PREMIUM REVENUE</div>
-          <div class="rev-index-amount-wrap">
-            <div class="rev-index-amount">KES 0</div>
-          </div>
-          <div class="rev-exact-tag">✓ Verified posted transactions · Not an estimate</div>
+      ${milestone ? `<div class="rev-milestone ${milestone.cls}">${milestone.text}</div>` : ''}
+
+      <div class="rev-hero-card">
+        <div class="rev-index-label">Total Premium Collected</div>
+        <div class="rev-index-amount-wrap">
+          <div class="rev-index-amount">${moneyHtml(0, { hero: true })}</div>
         </div>
-        <div class="rev-hero-right">
-          <div class="rev-index-change ${chgClass}">${chgText}</div>
-          ${top ? `
-          <div class="rev-spotlight">
-            <div class="rev-spotlight-label">🏅 Top Performer</div>
-            <div class="rev-spotlight-name">${top.name}</div>
-            <div class="rev-spotlight-amt">${formatMoney(top.amount)}</div>
-            <div class="rev-spotlight-pct">${((top.amount / data.ytdTotal) * 100).toFixed(1)}% of total premium</div>
-          </div>` : ''}
+        <div class="rev-exact-tag">Exact posted figures · verified from Oracle ERP</div>
+      </div>
+
+      <div class="rev-insights">
+        <div class="rev-insight">
+          <div class="rev-insight-label">Month on Month</div>
+          <div class="rev-insight-val ${chgClass}">${chgText}</div>
+        </div>
+        ${top ? `
+        <div class="rev-insight highlight">
+          <div class="rev-insight-label">Top Account</div>
+          <div class="rev-insight-name">${top.name}</div>
+          <div class="rev-insight-amt">${moneyHtml(top.amount, { sm: true })}</div>
+        </div>` : ''}
+        <div class="rev-insight">
+          <div class="rev-insight-label">Portfolio</div>
+          <div class="rev-insight-val num">${data.accountCount} accounts · ${data.monthCount} periods</div>
         </div>
       </div>
-      <div class="rev-index-stats">
-        <div class="rev-stat-box highlight">
-          <div class="rev-stat-box-label">Total Premium</div>
-          <div class="rev-stat-box-val green">${formatMoney(data.ytdTotal)}</div>
-        </div>
-        <div class="rev-stat-box">
-          <div class="rev-stat-box-label">Accounts</div>
-          <div class="rev-stat-box-val">${data.accountCount}</div>
-        </div>
-        <div class="rev-stat-box">
-          <div class="rev-stat-box-label">Months</div>
-          <div class="rev-stat-box-val">${data.monthCount}</div>
-        </div>
-        <div class="rev-stat-box">
-          <div class="rev-stat-box-label">Status</div>
-          <div class="rev-stat-box-val green">LIVE</div>
-        </div>
-      </div>
-      <div class="rev-panel rev-index-table-row rev-table-wrap">
+
+      <div class="rev-section-head">Leading Accounts by Premium</div>
+      <div class="rev-index-table-row">
         <div class="rev-table-head">
-          <span>Account</span><span>Product Name</span><span style="text-align:right">Premium (KES)</span><span style="text-align:right">Share</span>
+          <span>#</span><span>Product Name</span><span class="col-money">Premium Amount</span><span>Share</span>
         </div>
         <div class="rev-table-body">
           ${data.topAccounts.map((a, i) => {
             const pct = ((a.amount / data.ytdTotal) * 100).toFixed(1);
+            const rank = i + 1;
             return `
               <div class="rev-row${i === 0 ? ' top-row' : ''}">
-                <span class="rev-sym">${i === 0 ? '🥇' : ''} ${a.code}</span>
-                <span class="rev-name">${a.name}</span>
-                <span class="rev-price">${formatMoney(a.amount)}</span>
+                <span class="rev-rank">${rank}</span>
+                <span class="rev-name" title="${a.name}"><span class="rev-code">${a.code}</span>${a.name}</span>
+                <span class="rev-price col-money">${moneyHtml(a.amount)}</span>
                 <span class="rev-chg up">${pct}%</span>
               </div>`;
           }).join('')}
@@ -349,14 +414,14 @@ function buildMonthlySlide(data) {
   const upMonths = withGrowth.filter((m) => m.growth > 0).length;
 
   el.innerHTML = `
-    ${panelHeader('MONTHLY', 'Monthly Premium Trend', 'Exact posted premium by period', data.year)}
+    ${panelHeader('MONTHLY', 'Monthly Premium Trend', 'Posted premium by accounting period', data.year)}
     <div class="rev-monthly-body">
-      ${best ? `<div class="rev-milestone green">⭐ BEST MONTH: ${best.label} — ${formatMoney(best.amount)}</div>` : ''}
+      ${best ? `<div class="rev-milestone green">Best month: ${best.label} — ${moneyHtml(best.amount)}</div>` : ''}
       <div class="rev-chart-area">
         ${data.monthly.map((m) => {
           const pct = (m.amount / maxAmt * 100).toFixed(1);
           const dir = m.growth == null ? 'neutral' : (m.growth >= 0 ? 'up' : 'down');
-          const chgText = m.growth == null ? '—' : (m.growth >= 0 ? '▲' : '▼') + Math.abs(m.growth) + '%';
+          const chgText = m.growth == null ? '—' : `${m.growth >= 0 ? '+' : '−'}${Math.abs(m.growth)}%`;
           const isBest = best && m.period === best.period;
           return `
             <div class="rev-candle-col${isBest ? ' best-month' : ''}">
@@ -365,7 +430,7 @@ function buildMonthlySlide(data) {
               <div class="rev-candle-wrap">
                 <div class="rev-candle ${dir}" data-pct="${pct}"></div>
               </div>
-              <div class="rev-candle-val">${formatMoney(m.amount)}</div>
+              <div class="rev-candle-val">${moneyHtml(m.amount, { sm: true })}</div>
               <div class="rev-candle-lbl">${m.shortLabel}</div>
             </div>`;
         }).join('')}
@@ -373,19 +438,19 @@ function buildMonthlySlide(data) {
       <div class="rev-strip">
         <div class="rev-strip-item">
           <div class="rev-strip-label">Highest Month</div>
-          <div class="rev-strip-val green">${best ? best.shortLabel + ' — ' + formatMoney(best.amount) : '—'}</div>
+          <div class="rev-strip-val green">${best ? best.shortLabel + ' — ' : ''}${best ? moneyHtml(best.amount, { sm: true }) : '—'}</div>
         </div>
         <div class="rev-strip-item">
           <div class="rev-strip-label">Lowest Month</div>
-          <div class="rev-strip-val red">${worst ? worst.shortLabel + ' — ' + formatMoney(worst.amount) : '—'}</div>
+          <div class="rev-strip-val red">${worst ? worst.shortLabel + ' — ' : ''}${worst ? moneyHtml(worst.amount, { sm: true }) : '—'}</div>
         </div>
         <div class="rev-strip-item">
           <div class="rev-strip-label">Avg Growth</div>
-          <div class="rev-strip-val ${avgGrowth >= 0 ? 'green' : 'red'}">${avgGrowth != null ? (avgGrowth >= 0 ? '+' : '') + avgGrowth + '%' : '—'}</div>
+          <div class="rev-strip-val num ${avgGrowth >= 0 ? 'green' : 'red'}">${avgGrowth != null ? (avgGrowth >= 0 ? '+' : '') + avgGrowth + '%' : '—'}</div>
         </div>
         <div class="rev-strip-item">
           <div class="rev-strip-label">Growing Months</div>
-          <div class="rev-strip-val amber">${upMonths} of ${withGrowth.length}</div>
+          <div class="rev-strip-val num amber">${upMonths} of ${withGrowth.length}</div>
         </div>
       </div>
     </div>`;
@@ -400,23 +465,24 @@ function buildAccountsSlide(data) {
   const sorted = [...data.accounts].sort((a, b) => b.amount - a.amount);
 
   el.innerHTML = `
-    ${panelHeader('ACCOUNTS', 'Premium Account Breakdown', 'Every shilling counted — exact posted figures', data.year)}
+    ${panelHeader('ACCOUNTS', 'Premium Account Breakdown', data.accountCount + ' accounts · ranked by posted premium', data.year)}
     <div class="rev-board-body">
+      <div class="rev-index-table-row">
       <div class="rev-table-head">
-        <span>Rank</span><span>Product Name</span><span style="text-align:right">Premium (KES)</span><span style="text-align:right">Share</span>
+        <span>#</span><span>Product Name</span><span class="col-money">Premium Amount</span><span>Share</span>
       </div>
       <div class="rev-table-body">
         ${sorted.map((a, i) => {
           const pct = ((a.amount / data.ytdTotal) * 100).toFixed(1);
-          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
           return `
             <div class="rev-row${i < 3 ? ' top-row' : ''}">
-              <span class="rev-sym">${medal} ${a.code}</span>
-              <span class="rev-name">${a.name}</span>
-              <span class="rev-price">${formatMoney(a.amount)}</span>
+              <span class="rev-rank">${i + 1}</span>
+              <span class="rev-name" title="${a.name}"><span class="rev-code">${a.code}</span>${a.name}</span>
+              <span class="rev-price col-money">${moneyHtml(a.amount)}</span>
               <span class="rev-chg up">${pct}%</span>
             </div>`;
         }).join('')}
+      </div>
       </div>
     </div>`;
   return el;

@@ -6,24 +6,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #020804;
-    --panel: #040e08;
-    --border: #0d2818;
-    --border-hi: #1a4d2e;
-    --green: #00e676;
-    --green-dim: #00a152;
-    --red: #ff1744;
-    --amber: #ffab00;
-    --white: #e8f5e9;
-    --muted: #4a7c59;
-    --mono: 'IBM Plex Mono', monospace;
-    --display: 'Bebas Neue', sans-serif;
-    --sans: 'Inter', system-ui, sans-serif;
-    --ticker-h: 42px;
-    --header-h: 56px;
+    /* Geminia Life brand palette */
+    --gem-cyan: #00AEEF;
+    --gem-cyan-light: #4DC4F5;
+    --gem-cyan-glow: rgba(0, 174, 239, 0.35);
+    --gem-navy: #004A99;
+    --gem-navy-dark: #002B5C;
+    --gem-navy-deeper: #001833;
+    --gem-white: #FFFFFF;
+    --gem-silver: #E6E7E8;
+    --gem-muted: #9BB8D4;
+    --gem-label: #B8D0E8;
+
+    --bg: #000E1C;
+    --panel: #001A33;
+    --border: rgba(0, 74, 153, 0.4);
+    --border-hi: rgba(0, 174, 239, 0.45);
+    --accent: var(--gem-cyan);
+    --accent-dim: #0088BB;
+    --red: #E53935;
+    --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-money: 'IBM Plex Mono', 'Consolas', monospace;
+    --ticker-h: 40px;
+    --header-h: 60px;
     --footer-h: 36px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -31,24 +39,22 @@
     width: 100%; height: 100%;
     background: var(--bg);
     overflow: hidden;
-    font-family: var(--sans);
-    color: var(--white);
+    font-family: var(--font-ui);
+    color: var(--gem-white);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Scanlines */
-  body::after {
+  body::before {
     content: '';
     position: fixed;
     inset: 0;
-    z-index: 9999;
+    z-index: 0;
     pointer-events: none;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.03) 2px,
-      rgba(0,0,0,0.03) 4px
-    );
+    background:
+      radial-gradient(ellipse 80% 60% at 10% -10%, rgba(0,174,239,0.07), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 100% 100%, rgba(0,74,153,0.12), transparent 50%);
   }
 
   /* ── TOP BAR ── */
@@ -61,75 +67,97 @@
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     padding: 0 24px;
-    background: linear-gradient(180deg, #061a0e 0%, #020804 100%);
-    border-bottom: 2px solid var(--border-hi);
-    box-shadow: 0 4px 24px rgba(0,230,118,0.08);
+    background: rgba(0, 24, 51, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(0, 174, 239, 0.35);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
   }
-  .tb-left { display: flex; align-items: center; gap: 16px; }
-  .tb-logo {
-    font-family: var(--display);
-    font-size: clamp(22px, 2.5vw, 30px);
-    letter-spacing: 0.06em;
-    color: var(--green);
-    text-shadow: 0 0 20px rgba(0,230,118,0.5);
-    line-height: 1;
+  .tb-left { display: flex; align-items: center; min-width: 0; }
+  .tb-brand {
+    display: flex;
+    align-items: center;
+    line-height: 0;
+    text-decoration: none;
   }
-  .tb-logo span { color: var(--white); }
-  .tb-tag {
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border: 1px solid var(--border-hi);
-    border-radius: 2px;
+  .tb-logo-pad {
+    background: #ffffff;
+    padding: 6px 16px 6px 12px;
+    border-radius: 6px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.28);
+    display: flex;
+    align-items: center;
+  }
+  .tb-logo-img {
+    height: 42px;
+    width: auto;
+    max-width: min(300px, 36vw);
+    object-fit: contain;
+    object-position: left center;
+    display: block;
+    image-rendering: auto;
   }
   .tb-center {
-    font-family: var(--display);
-    font-size: 18px;
-    letter-spacing: 0.2em;
-    color: var(--amber);
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    font-size: clamp(11px, 1.05vw, 13px);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--gem-label);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .tb-center-line {
+    width: 28px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 174, 239, 0.45));
+  }
+  .tb-center-line:last-child {
+    background: linear-gradient(90deg, rgba(0, 174, 239, 0.45), transparent);
   }
   .tb-right {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 20px;
+    gap: 14px;
   }
+  .tb-live-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .data-updated {
+    font-size: 9px;
+    font-weight: 500;
+    font-family: var(--font-money);
+    color: var(--gem-muted);
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .data-updated.fresh { color: var(--gem-cyan); }
   .live-status {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 700;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 600;
     letter-spacing: 0.1em;
-    color: var(--green);
+    color: var(--gem-cyan);
     text-transform: uppercase;
   }
   .status-dot {
-    width: 8px; height: 8px;
+    width: 7px; height: 7px;
     border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green), 0 0 16px var(--green);
-    animation: blink 1.5s ease infinite;
+    background: var(--gem-cyan);
+    box-shadow: 0 0 8px var(--gem-cyan);
+    animation: blink 2s ease infinite;
   }
   @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
   }
-  #clock {
-    font-family: var(--mono);
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--white);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.05em;
-  }
-
   /* ── TICKER ── */
   #ticker-wrap {
     position: fixed;
@@ -137,9 +165,8 @@
     left: 0; right: 0;
     height: var(--ticker-h);
     z-index: 100;
-    background: #010a04;
-    border-top: 2px solid var(--green-dim);
-    border-bottom: 1px solid var(--border-hi);
+    background: rgba(0, 43, 92, 0.9);
+    border-top: 1px solid rgba(0, 174, 239, 0.25);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -149,23 +176,30 @@
   #ticker-wrap.visible { opacity: 1; }
   .ticker-label {
     flex-shrink: 0;
-    background: var(--green-dim);
-    color: #000;
-    font-family: var(--display);
-    font-size: 16px;
+    background: var(--gem-cyan);
+    color: var(--gem-navy-deeper);
+    font-size: 10px;
+    font-weight: 700;
     letter-spacing: 0.12em;
     padding: 0 16px;
     height: 100%;
     display: flex;
     align-items: center;
+    gap: 8px;
     z-index: 2;
+  }
+  .ticker-mark {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    filter: brightness(0) saturate(100%);
+    opacity: 0.65;
   }
   #ticker-track {
     display: flex;
     white-space: nowrap;
-    animation: ticker 40s linear infinite;
+    animation: ticker 45s linear infinite;
   }
-  #ticker-track:hover { animation-play-state: paused; }
   @keyframes ticker {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
@@ -173,48 +207,78 @@
   .tick-item {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 0 28px;
-    font-family: var(--mono);
-    font-size: 13px;
-    border-right: 1px solid var(--border);
+    gap: 12px;
+    padding: 0 32px;
+    font-size: 12px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
   }
-  .tick-sym { color: var(--amber); font-weight: 700; }
-  .tick-val { color: var(--white); font-weight: 600; font-size: clamp(11px, 1vw, 13px); }
-  .tick-chg.up { color: var(--green); }
+  .tick-sym {
+    color: var(--gem-label);
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    min-width: 72px;
+  }
+  .tick-val {
+    color: var(--gem-white);
+    font-weight: 600;
+    font-family: var(--font-money);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    letter-spacing: 0.04em;
+  }
+  .tick-chg {
+    font-family: var(--font-money);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  #clock {
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-money);
+    color: var(--gem-label);
+    font-variant-numeric: tabular-nums;
+  }
+  .tick-chg.up { color: var(--gem-cyan); }
   .tick-chg.down { color: var(--red); }
 
-  /* ── FOOTER BAR ── */
+  /* ── FOOTER ── */
   #footer {
     position: fixed;
     bottom: 0; left: 0; right: 0;
     height: var(--footer-h);
     z-index: 100;
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     padding: 0 24px;
-    background: #010a04;
-    border-top: 1px solid var(--border);
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
+    background: rgba(0, 16, 32, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 10px;
+    color: var(--gem-muted);
     opacity: 0;
     transition: opacity 0.5s;
   }
   #footer.visible { opacity: 1; }
-  #slide-label { color: var(--amber); font-weight: 600; letter-spacing: 0.08em; }
-  #counter { color: var(--muted); }
-  #dots { display: flex; gap: 5px; }
+  #slide-label { color: var(--gem-label); font-weight: 600; letter-spacing: 0.06em; font-size: 11px; }
+  #dots { display: flex; gap: 5px; justify-content: center; }
   .dot {
-    width: 5px; height: 5px;
-    background: var(--border-hi);
-    border-radius: 1px;
-    transition: background 0.3s, box-shadow 0.3s;
+    width: 20px; height: 3px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+    transition: all 0.3s;
   }
   .dot.active {
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
+    background: var(--gem-cyan);
+    width: 28px;
+  }
+  #counter {
+    text-align: right;
+    font-family: var(--font-money);
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
   }
 
   /* ── STAGE ── */
@@ -235,14 +299,13 @@
   }
   #stage img.active, #stage video.active { opacity: 1; }
 
-  /* Progress */
   #progress-wrap {
     position: fixed;
     top: var(--header-h);
     left: 0; right: 0;
-    height: 2px;
+    height: 3px;
     z-index: 101;
-    background: var(--border);
+    background: rgba(0,74,153,0.3);
     opacity: 0;
     transition: opacity 0.3s;
   }
@@ -250,12 +313,12 @@
   #progress-bar {
     height: 100%;
     width: 0%;
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green);
+    background: linear-gradient(90deg, var(--gem-navy), var(--gem-cyan), var(--gem-cyan-light));
+    box-shadow: 0 0 12px var(--gem-cyan-glow);
     transition: width 0.1s linear;
   }
 
-  /* Empty */
+  /* Empty state */
   #empty {
     position: absolute;
     inset: 0;
@@ -263,45 +326,51 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 24px;
+    gap: 28px;
     text-align: center;
     padding: 40px;
     background: var(--bg);
   }
-  .empty-logo {
-    font-family: var(--display);
-    font-size: clamp(36px, 5vw, 64px);
-    letter-spacing: 0.08em;
-    color: var(--green);
-    text-shadow: 0 0 40px rgba(0,230,118,0.4);
-    line-height: 1.1;
+  .empty-brand {
+    padding: 20px 36px;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
   }
-  .empty-logo span { display: block; font-size: 0.55em; color: var(--white); letter-spacing: 0.25em; }
+  .empty-logo-img {
+    height: clamp(72px, 10vw, 110px);
+    width: auto;
+    max-width: min(460px, 85vw);
+    object-fit: contain;
+    display: block;
+  }
   .empty-board {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gem-cyan);
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    padding: 12px 24px;
+    padding: 12px 28px;
     border: 1px solid var(--border-hi);
+    border-radius: 4px;
+    background: rgba(0,174,239,0.06);
   }
-  .empty-sub { font-size: 14px; color: var(--muted); max-width: 400px; line-height: 1.7; }
+  .empty-sub { font-size: 15px; color: var(--gem-muted); max-width: 440px; line-height: 1.7; }
   .empty-link {
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    color: var(--green);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #fff;
     text-decoration: none;
-    padding: 10px 20px;
-    border: 1px solid var(--green-dim);
+    padding: 12px 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--gem-cyan), var(--gem-navy));
     text-transform: uppercase;
-    transition: background 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
   }
   .empty-link:hover {
-    background: rgba(0,230,118,0.08);
-    box-shadow: 0 0 16px rgba(0,230,118,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px var(--gem-cyan-glow);
   }
 
   #fullscreen-hint {
@@ -310,33 +379,44 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 200;
-    font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.1em;
-    color: var(--muted);
-    padding: 6px 14px;
-    border: 1px solid var(--border-hi);
-    background: rgba(2,8,4,0.9);
+    color: var(--gem-muted);
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: rgba(0,24,51,0.9);
     text-transform: uppercase;
     transition: opacity 0.6s;
     pointer-events: none;
   }
   #fullscreen-hint.hidden { opacity: 0; }
 </style>
+<link rel="icon" href="geminia-mark.png" type="image/png" />
 <link rel="stylesheet" href="revenue.css" />
 </head>
 <body>
 
   <div id="topbar">
     <div class="tb-left">
-      <div class="tb-logo">GEMINIA <span>LIFE</span></div>
-      <div class="tb-tag">Insurance</div>
+      <a class="tb-brand" href="/">
+        <div class="tb-logo-pad">
+          <img class="tb-logo-img" src="geminia-logo.png" alt="Geminia Life Insurance" />
+        </div>
+      </a>
     </div>
-    <div class="tb-center">◆ LIVE PREMIUM DASHBOARD ◆</div>
+    <div class="tb-center">
+      <span class="tb-center-line" aria-hidden="true"></span>
+      Premium Performance
+      <span class="tb-center-line" aria-hidden="true"></span>
+    </div>
     <div class="tb-right">
-      <div class="live-status">
-        <div class="status-dot"></div>
-        LIVE
+      <div class="tb-live-block">
+        <div class="live-status">
+          <div class="status-dot"></div>
+          LIVE
+        </div>
+        <div id="data-updated" class="data-updated">Connecting…</div>
       </div>
       <div id="clock"></div>
     </div>
@@ -346,15 +426,20 @@
 
   <div id="stage">
     <div id="empty">
-      <div class="empty-logo">GEMINIA<span>LIFE INSURANCE</span></div>
-      <div class="empty-board">◆ Geminia Life Insurance — Loading Premium Data ◆</div>
-      <div class="empty-sub">Live premium figures from Oracle ERP. Dashboard initializing...</div>
-      <a class="empty-link" href="/admin.html">→ Admin Panel</a>
+      <div class="empty-brand">
+        <img class="empty-logo-img" src="geminia-logo.png" alt="Geminia Life Insurance" />
+      </div>
+      <div class="empty-board">Loading Premium Dashboard</div>
+      <div class="empty-sub">Live premium figures from Oracle ERP — exact posted transactions</div>
+      <a class="empty-link" href="/admin.html">Open Admin Panel</a>
     </div>
   </div>
 
   <div id="ticker-wrap">
-    <div class="ticker-label">LIVE PREMIUMS</div>
+    <div class="ticker-label">
+      <img class="ticker-mark" src="geminia-mark.png" alt="" />
+      LIVE PREMIUMS
+    </div>
     <div id="ticker-track"></div>
   </div>
 
