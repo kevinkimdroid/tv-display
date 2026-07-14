@@ -521,16 +521,16 @@ function buildBudgetSlide(data) {
 
   // SVG clustered column chart — Budget (silver) vs Actual (cyan/red)
   const W = 1000;
-  const H = 260;
+  const H = 280;
   const padL = 54;
-  const padR = 16;
-  const padT = 28;
-  const padB = 48;
+  const padR = 12;
+  const padT = 24;
+  const padB = 58;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
   const n = chart.length;
   const groupW = plotW / Math.max(n, 1);
-  const barW = Math.min(28, groupW * 0.32);
+  const barW = Math.min(22, groupW * 0.28);
   const yMax = scaleMax * 1.08;
   const y = (v) => padT + plotH - (v / yMax) * plotH;
   const gridVals = [0.25, 0.5, 0.75, 1].map((p) => yMax * p);
@@ -552,8 +552,9 @@ function buildBudgetSlide(data) {
           <g class="rev-vs-col-group">
             <rect class="rev-vs-col budget" x="${cx - barW - 3}" y="${y(line.budgetYtd)}" width="${barW}" height="${bh}" rx="3" />
             <rect class="rev-vs-col actual ${actualClass}" x="${cx + 3}" y="${y(line.actualYtd)}" width="${barW}" height="${ah}" rx="3" />
-            <text class="rev-vs-col-lbl" x="${cx}" y="${H - 28}" text-anchor="middle">${line.name}</text>
-            <text class="rev-vs-col-pct ${actualClass}" x="${cx}" y="${H - 12}" text-anchor="middle">${line.pctOfBudget != null ? line.pctOfBudget + '%' : ''}</text>
+            <text class="rev-vs-col-lbl" x="${cx}" y="${H - 30}" text-anchor="middle">${line.code}</text>
+            <text class="rev-vs-col-lbl sub" x="${cx}" y="${H - 16}" text-anchor="middle">${line.name}</text>
+            <text class="rev-vs-col-pct ${actualClass}" x="${cx}" y="${H - 3}" text-anchor="middle">${line.pctOfBudget != null ? line.pctOfBudget + '%' : '—'}</text>
           </g>`;
       }).join('')}
     </svg>`;
@@ -612,7 +613,7 @@ function buildBudgetSlide(data) {
 
       <div class="rev-vs-chart-wrap">
         <div class="rev-vs-chart-head">
-          <div class="rev-section-head" style="margin:0">Product graph — Budget vs Actual</div>
+          <div class="rev-section-head">Product graph — all 12 accounts · Budget vs Actual</div>
           <div class="rev-vs-legend">
             <span class="rev-vs-leg budget"><i></i>Budget</span>
             <span class="rev-vs-leg actual"><i></i>Actual</span>
@@ -627,7 +628,7 @@ function buildBudgetSlide(data) {
           const isDeficit = line.variance < 0;
           return `
             <div class="rev-vs-chip ${statusClass(line.status)}">
-              <span class="rev-vs-chip-name">${line.name}</span>
+              <span class="rev-vs-chip-name" title="${line.fullName || line.name}"><span class="rev-code">${line.code || ''}</span>${line.name}</span>
               <span class="rev-vs-chip-pair"><em>B</em>${compactMoney(line.budgetYtd)}</span>
               <span class="rev-vs-chip-pair accent"><em>A</em>${compactMoney(line.actualYtd)}</span>
               <span class="rev-vs-chip-gap ${isDeficit ? 'fail' : 'ok'}">${isDeficit ? '−' : '+'}${compactMoney(Math.abs(line.variance))}</span>

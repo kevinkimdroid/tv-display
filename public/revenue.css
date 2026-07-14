@@ -1070,11 +1070,10 @@
 .rev-vs-col.budget { fill: rgba(155, 184, 212, 0.7); }
 .rev-vs-col.actual.ok { fill: #00AEEF; }
 .rev-vs-col.actual.fail { fill: #E53935; }
-.rev-vs-col-lbl {
-  fill: var(--gem-label);
-  font-size: 11px;
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-weight: 600;
+.rev-vs-col-lbl.sub {
+  fill: var(--gem-muted);
+  font-size: 9px;
+  font-weight: 500;
 }
 .rev-vs-col-pct {
   font-size: 11px;
