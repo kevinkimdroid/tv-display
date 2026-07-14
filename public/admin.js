@@ -180,7 +180,9 @@ playlistEl.addEventListener('change', async (e) => {
 const revEnabled = document.getElementById('revEnabled');
 const revYear = document.getElementById('revYear');
 const revDuration = document.getElementById('revDuration');
+const slidePortfolio = document.getElementById('slidePortfolio');
 const slideYtd = document.getElementById('slideYtd');
+const slideBudget = document.getElementById('slideBudget');
 const slideMonthly = document.getElementById('slideMonthly');
 const slideAccounts = document.getElementById('slideAccounts');
 const saveRevenue = document.getElementById('saveRevenue');
@@ -189,7 +191,9 @@ const revenuePreview = document.getElementById('revenuePreview');
 
 function getSelectedSlides() {
   const slides = [];
+  if (slidePortfolio.checked) slides.push('portfolio');
   if (slideYtd.checked) slides.push('ytd');
+  if (slideBudget.checked) slides.push('budget');
   if (slideMonthly.checked) slides.push('monthly');
   if (slideAccounts.checked) slides.push('accounts');
   return slides;
@@ -202,8 +206,10 @@ async function loadSettings() {
   revEnabled.checked = rev.enabled !== false;
   revYear.value = rev.year || '2026';
   revDuration.value = rev.slideDuration || 14;
-  const slides = rev.slides || ['ytd', 'monthly', 'accounts'];
+  const slides = rev.slides || ['portfolio', 'ytd', 'budget', 'monthly', 'accounts'];
+  slidePortfolio.checked = slides.includes('portfolio');
   slideYtd.checked = slides.includes('ytd');
+  slideBudget.checked = slides.includes('budget');
   slideMonthly.checked = slides.includes('monthly');
   slideAccounts.checked = slides.includes('accounts');
 }
@@ -221,7 +227,8 @@ async function loadRevenuePreview() {
     }).join(' · ');
     revenuePreview.innerHTML = `
       <strong>YTD Total:</strong> ${fmt.format(data.ytdTotal)}<br/>
-      <strong>Months:</strong> ${months || 'No data yet'}`;
+      <strong>Months:</strong> ${months || 'No data yet'}
+      ${data.budget?.summary ? `<br/><strong>Budget (${data.budget.throughLabel}):</strong> ${data.budget.summary.pctOfBudget}% · ${data.budget.summary.failingCount} behind · ${data.budget.summary.atRiskCount} at risk` : ''}`;
   } catch (err) {
     revenuePreview.textContent = `Could not load preview: ${err.message}`;
   }

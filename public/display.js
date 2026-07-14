@@ -26,6 +26,8 @@ const fmt = new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES',
 
 const SLIDE_LABELS = {
   ytd: 'YTD PREMIUM SUMMARY',
+  portfolio: 'PORTFOLIO DIRECTION',
+  budget: 'ACTUAL VS BUDGET',
   monthly: 'MONTHLY PREMIUM TREND',
   accounts: 'ACCOUNT BREAKDOWN',
   image: 'MEDIA',
@@ -194,10 +196,10 @@ function buildFeed(data) {
   if (!data) return;
   const items = [
     { code: 'YTD TOTAL', val: formatMoney(data.ytdTotal), chg: null },
-    ...data.accounts.slice(0, 6).map((a) => ({
+    ...[...data.accounts].sort((a, b) => b.amount - a.amount).map((a) => ({
       code: a.code,
       val: formatMoney(a.amount),
-      chg: ((a.amount / data.ytdTotal) * 100).toFixed(1)
+      chg: data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0'
     }))
   ];
 
@@ -373,6 +375,271 @@ function panelHeader(code, title, sub, badge) {
     </div>`;
 }
 
+function statusLabel(status) {
+  if (status === 'on_track') return 'ON TRACK';
+  if (status === 'at_risk') return 'AT RISK';
+  if (status === 'failing') return 'BEHIND';
+  if (status === 'untracked') return 'ACTUAL';
+  return '—';
+}
+
+function statusClass(status) {
+  if (status === 'on_track') return 'ok';
+  if (status === 'at_risk') return 'risk';
+  if (status === 'failing') return 'fail';
+  if (status === 'untracked') return 'plain';
+  return '';
+}
+
+function compactMoney(n) {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
+  if (abs >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (abs >= 1_000) return (n / 1_000).toFixed(0) + 'K';
+  return String(Math.round(n));
+}
+
+function buildPortfolioSlide(data) {
+  const el = document.createElement('div');
+  el.className = 'rev-slide rev-panel';
+  const b = data.budget;
+  if (!b?.segments?.length) {
+    el.innerHTML = `
+      ${panelHeader('PORTFOLIO', 'Portfolio Direction', 'All products · budget pace', data.year)}
+      <div class="rev-loading">Budget mapping unavailable</div>`;
+    return el;
+  }
+
+  const s = b.summary;
+  const d = b.direction || {};
+  const paceCls = statusClass(s.status);
+  const milCls = s.status === 'failing' ? 'fail' : (s.status === 'at_risk' ? 'amber' : 'green');
+
+  el.innerHTML = `
+    ${panelHeader('PORTFOLIO', 'Portfolio Direction', 'All products at a glance · YTD ' + b.throughLabel, data.year)}
+    <div class="rev-portfolio-body">
+      <div class="rev-direction-banner ${paceCls}">
+        <div class="rev-direction-main">
+          <div class="rev-direction-kicker">Organisation direction</div>
+          <div class="rev-direction-headline">${d.headline || 'Budget performance'}</div>
+          <div class="rev-direction-sub">${d.narrative || ''}</div>
+        </div>
+        <div class="rev-direction-pace">
+          <div class="rev-direction-pace-val ${paceCls}">${s.pctOfBudget != null ? s.pctOfBudget + '%' : '—'}</div>
+          <div class="rev-direction-pace-lbl">of YTD budget</div>
+          <div class="rev-direction-gap ${s.variance >= 0 ? 'ok' : 'fail'}">
+            ${s.variance >= 0 ? 'Ahead' : 'Short'} ${compactMoney(Math.abs(s.variance))}
+          </div>
+        </div>
+      </div>
+
+      <div class="rev-portfolio-grid">
+        ${b.segments.map((seg) => `
+          <section class="rev-seg ${statusClass(seg.status)}">
+            <header class="rev-seg-head">
+              <div>
+                <div class="rev-seg-name">${seg.name}</div>
+                <div class="rev-seg-meta">${seg.lineCount} product${seg.lineCount === 1 ? '' : 's'}</div>
+              </div>
+              <div class="rev-seg-pace ${statusClass(seg.status)}">
+                ${seg.pctOfBudget != null ? seg.pctOfBudget + '%' : '—'}
+              </div>
+            </header>
+            <div class="rev-seg-totals">
+              <span>Actual ${compactMoney(seg.actualYtd)}</span>
+              <span>Budget ${compactMoney(seg.budgetYtd)}</span>
+            </div>
+            <div class="rev-product-list">
+              ${seg.lines.map((line) => {
+                const barPct = Math.min(line.pctOfBudget != null ? line.pctOfBudget : (line.pctOfAnnual || 0), 120);
+                const isDeficit = line.annualBudget > 0 && line.variance < 0;
+                const gapBit = line.annualBudget > 0
+                  ? (isDeficit
+                    ? `<span class="rev-product-def fail">−${compactMoney(Math.abs(line.variance))}</span>`
+                    : `<span class="rev-product-def ok">+${compactMoney(line.variance)}</span>`)
+                  : `<span class="rev-product-def plain">no budget</span>`;
+                return `
+                  <div class="rev-product ${statusClass(line.status)}">
+                    <div class="rev-product-top">
+                      <span class="rev-product-name">${line.shortName || line.name}</span>
+                      <span class="rev-product-badge ${statusClass(line.status)}">${statusLabel(line.status)}</span>
+                    </div>
+                    <div class="rev-product-trio">
+                      <span><em>Bud</em> ${compactMoney(line.budgetYtd)}</span>
+                      <span><em>Act</em> ${compactMoney(line.actualYtd)}</span>
+                      ${gapBit}
+                    </div>
+                    <div class="rev-product-bar-track">
+                      <div class="rev-product-bar ${statusClass(line.status)}" style="width:${Math.max(barPct, 2)}%"></div>
+                      <div class="rev-product-bar-mark"></div>
+                    </div>
+                    <div class="rev-product-foot">
+                      <span class="rev-product-amt">${moneyHtml(line.actualYtd, { sm: true })}</span>
+                      <span class="rev-product-pct ${statusClass(line.status)}">${line.pctOfBudget != null ? line.pctOfBudget + '%' : '—'}</span>
+                    </div>
+                  </div>`;
+              }).join('')}
+            </div>
+          </section>
+        `).join('')}
+      </div>
+
+      <div class="rev-portfolio-legend">
+        <span class="rev-flag ok">${b.onTrackCount} on track</span>
+        <span class="rev-flag risk">${s.atRiskCount} at risk</span>
+        <span class="rev-flag fail">${s.failingCount} behind</span>
+        <span class="rev-legend-note">100% mark = YTD budget · Book5 vs Oracle posted</span>
+      </div>
+    </div>`;
+
+  return el;
+}
+
+function buildBudgetSlide(data) {
+  const el = document.createElement('div');
+  el.className = 'rev-slide rev-panel';
+  const b = data.budget;
+  if (!b?.lines?.length) {
+    el.innerHTML = `
+      ${panelHeader('BUDGET', 'Budget vs Actual', 'No budget file loaded for ' + data.year, data.year)}
+      <div class="rev-loading">Add data/budgets-${data.year}.json to enable comparisons</div>`;
+    return el;
+  }
+
+  const s = b.summary;
+  const chart = b.chart || b.lines;
+  const totalDeficit = b.lines
+    .filter((l) => l.variance < 0)
+    .reduce((sum, l) => sum + Math.abs(l.variance), 0);
+  const totalSurplus = b.lines
+    .filter((l) => l.variance > 0)
+    .reduce((sum, l) => sum + l.variance, 0);
+  const scaleMax = Math.max(...chart.map((l) => Math.max(l.budgetYtd, l.actualYtd)), s.budgetYtd, s.actualYtd, 1);
+  const headline = s.variance < 0
+    ? `Short of Overall Life budget by ${formatMoney(Math.abs(s.variance))}`
+    : `Ahead of Overall Life budget by ${formatMoney(s.variance)}`;
+
+  // SVG clustered column chart — Budget (silver) vs Actual (cyan/red)
+  const W = 1000;
+  const H = 260;
+  const padL = 54;
+  const padR = 16;
+  const padT = 28;
+  const padB = 48;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const n = chart.length;
+  const groupW = plotW / Math.max(n, 1);
+  const barW = Math.min(28, groupW * 0.32);
+  const yMax = scaleMax * 1.08;
+  const y = (v) => padT + plotH - (v / yMax) * plotH;
+  const gridVals = [0.25, 0.5, 0.75, 1].map((p) => yMax * p);
+  const chartSvg = `
+    <svg class="rev-vs-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Budget versus actual by product">
+      ${gridVals.map((gv) => `
+        <line class="rev-vs-grid" x1="${padL}" y1="${y(gv)}" x2="${W - padR}" y2="${y(gv)}" />
+        <text class="rev-vs-axis" x="${padL - 8}" y="${y(gv) + 4}" text-anchor="end">${compactMoney(gv)}</text>
+      `).join('')}
+      <line class="rev-vs-axis-line" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" />
+      <line class="rev-vs-axis-line" x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" />
+      ${chart.map((line, i) => {
+        const cx = padL + groupW * i + groupW / 2;
+        const bh = Math.max(padT + plotH - y(line.budgetYtd), 2);
+        const ah = Math.max(padT + plotH - y(line.actualYtd), 2);
+        const isDef = line.variance < 0;
+        const actualClass = isDef ? 'fail' : 'ok';
+        return `
+          <g class="rev-vs-col-group">
+            <rect class="rev-vs-col budget" x="${cx - barW - 3}" y="${y(line.budgetYtd)}" width="${barW}" height="${bh}" rx="3" />
+            <rect class="rev-vs-col actual ${actualClass}" x="${cx + 3}" y="${y(line.actualYtd)}" width="${barW}" height="${ah}" rx="3" />
+            <text class="rev-vs-col-lbl" x="${cx}" y="${H - 28}" text-anchor="middle">${line.name}</text>
+            <text class="rev-vs-col-pct ${actualClass}" x="${cx}" y="${H - 12}" text-anchor="middle">${line.pctOfBudget != null ? line.pctOfBudget + '%' : ''}</text>
+          </g>`;
+      }).join('')}
+    </svg>`;
+
+  el.innerHTML = `
+    ${panelHeader('BUDGET', 'Actual vs Budget', 'YTD ' + b.throughLabel + ' · full Oracle posted vs Book5 Overall Life', data.year)}
+    <div class="rev-budget-body vs-body">
+      <div class="rev-vs-hero">
+        <div class="rev-vs-compare-card">
+          <div class="rev-vs-pair">
+            <div class="rev-vs-col budget-col">
+              <div class="rev-vs-tag">BUDGET</div>
+              <div class="rev-vs-big">${moneyHtml(s.budgetYtd)}</div>
+              <div class="rev-vs-hint">${s.budgetLabel || 'Overall Life'} · YTD ${b.throughLabel}</div>
+            </div>
+            <div class="rev-vs-divider" aria-hidden="true"><span>vs</span></div>
+            <div class="rev-vs-col actual-col">
+              <div class="rev-vs-tag accent">ACTUAL</div>
+              <div class="rev-vs-big accent">${moneyHtml(s.actualYtd)}</div>
+              <div class="rev-vs-hint">${s.actualLabel || 'Oracle posted'} · YTD ${b.throughLabel}</div>
+            </div>
+          </div>
+          <div class="rev-vs-track">
+            <div class="rev-vs-track-actual ${statusClass(s.status)}" style="width:${Math.min((s.actualYtd / Math.max(s.budgetYtd, 1)) * 100, 100)}%"></div>
+            <div class="rev-vs-track-label">${s.pctOfBudget}% of Overall Life budget</div>
+          </div>
+          <div class="rev-vs-live">Live YTD incl. current month: <strong>${formatMoney(data.ytdTotal)}</strong></div>
+        </div>
+
+        <div class="rev-vs-side">
+          <div class="rev-vs-deficit-card ${s.variance < 0 ? 'is-deficit' : 'is-surplus'}">
+            <div class="rev-vs-tag">${s.variance < 0 ? 'NET DEFICIT' : 'NET SURPLUS'}</div>
+            <div class="rev-vs-big ${s.variance < 0 ? 'fail' : 'ok'}">${moneyHtml(Math.abs(s.variance))}</div>
+            <div class="rev-vs-hint">${headline}</div>
+          </div>
+          <div class="rev-vs-mini-grid">
+            <div class="rev-vs-mini fail">
+              <div class="rev-vs-mini-lbl">Product deficits</div>
+              <div class="rev-vs-mini-val">${compactMoney(totalDeficit)}</div>
+            </div>
+            <div class="rev-vs-mini ok">
+              <div class="rev-vs-mini-lbl">Product surplus</div>
+              <div class="rev-vs-mini-val">${compactMoney(totalSurplus)}</div>
+            </div>
+            <div class="rev-vs-mini">
+              <div class="rev-vs-mini-lbl">Behind</div>
+              <div class="rev-vs-mini-val fail">${s.failingCount}</div>
+            </div>
+            <div class="rev-vs-mini">
+              <div class="rev-vs-mini-lbl">At risk</div>
+              <div class="rev-vs-mini-val risk">${s.atRiskCount}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rev-vs-chart-wrap">
+        <div class="rev-vs-chart-head">
+          <div class="rev-section-head" style="margin:0">Product graph — Budget vs Actual</div>
+          <div class="rev-vs-legend">
+            <span class="rev-vs-leg budget"><i></i>Budget</span>
+            <span class="rev-vs-leg actual"><i></i>Actual</span>
+            <span class="rev-vs-leg fail"><i></i>Behind plan</span>
+          </div>
+        </div>
+        ${chartSvg}
+      </div>
+
+      <div class="rev-vs-list compact">
+        ${chart.map((line) => {
+          const isDeficit = line.variance < 0;
+          return `
+            <div class="rev-vs-chip ${statusClass(line.status)}">
+              <span class="rev-vs-chip-name">${line.name}</span>
+              <span class="rev-vs-chip-pair"><em>B</em>${compactMoney(line.budgetYtd)}</span>
+              <span class="rev-vs-chip-pair accent"><em>A</em>${compactMoney(line.actualYtd)}</span>
+              <span class="rev-vs-chip-gap ${isDeficit ? 'fail' : 'ok'}">${isDeficit ? '−' : '+'}${compactMoney(Math.abs(line.variance))}</span>
+              <span class="rev-vs-chip-pct ${statusClass(line.status)}">${line.pctOfBudget != null ? line.pctOfBudget + '%' : '—'}</span>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  return el;
+}
+
 function buildYtdSlide(data) {
   const el = document.createElement('div');
   el.className = 'rev-slide rev-panel';
@@ -384,6 +651,13 @@ function buildYtdSlide(data) {
     : `${latestGrowth >= 0 ? '+' : '−'}${Math.abs(latestGrowth)}% month on month`;
   const milestone = getMilestone(data.ytdTotal);
   const top = data.topAccounts[0];
+  const budgetSummary = data.budget?.summary;
+  const budgetInsight = budgetSummary ? `
+          <div class="rev-insight ${budgetSummary.status === 'failing' ? 'fail-bg' : ''}">
+            <div class="rev-insight-label">Budget Pace (${data.budget.throughLabel})</div>
+            <div class="rev-insight-val ${budgetSummary.variance >= 0 ? 'up' : 'down'}">${budgetSummary.pctOfBudget}% of YTD budget</div>
+            <div class="rev-insight-name">${budgetSummary.failingCount} behind · ${budgetSummary.atRiskCount} at risk</div>
+          </div>` : '';
 
   el.innerHTML = `
     ${panelHeader('YTD', 'Year-to-Date Premium Summary', 'Posted premium · ' + data.year, data.year)}
@@ -409,6 +683,7 @@ function buildYtdSlide(data) {
             <div class="rev-insight-name">${top.name}</div>
             <div class="rev-insight-amt">${moneyHtml(top.amount, { sm: true })}</div>
           </div>` : ''}
+          ${budgetInsight}
           <div class="rev-insight">
             <div class="rev-insight-label">Portfolio</div>
             <div class="rev-insight-val num">${data.accountCount} accounts · ${data.monthCount} periods</div>
@@ -416,14 +691,14 @@ function buildYtdSlide(data) {
         </div>
       </div>
 
-      <div class="rev-section-head">Leading Accounts by Premium</div>
+      <div class="rev-section-head">All Products by Premium · ${data.accountCount} accounts</div>
       <div class="rev-index-table-row">
         <div class="rev-table-head">
           <span>#</span><span>Product Name</span><span class="col-money">Premium Amount</span><span>Share</span>
         </div>
         <div class="rev-table-body">
-          ${[...data.accounts].sort((a, b) => b.amount - a.amount).slice(0, 8).map((a, i) => {
-            const pct = ((a.amount / data.ytdTotal) * 100).toFixed(1);
+          ${[...data.accounts].sort((a, b) => b.amount - a.amount).map((a, i) => {
+            const pct = data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0';
             const rank = i + 1;
             return `
               <div class="rev-row${i === 0 ? ' top-row' : ''}">
@@ -510,7 +785,7 @@ function buildAccountsSlide(data) {
   const sorted = [...data.accounts].sort((a, b) => b.amount - a.amount);
 
   el.innerHTML = `
-    ${panelHeader('ACCOUNTS', 'Premium Account Breakdown', data.accountCount + ' accounts · ranked by posted premium', data.year)}
+    ${panelHeader('ACCOUNTS', 'All Products by Premium', data.accountCount + ' accounts · full portfolio', data.year)}
     <div class="rev-board-body">
       <div class="rev-index-table-row">
       <div class="rev-table-head">
@@ -518,7 +793,7 @@ function buildAccountsSlide(data) {
       </div>
       <div class="rev-table-body">
         ${sorted.map((a, i) => {
-          const pct = ((a.amount / data.ytdTotal) * 100).toFixed(1);
+          const pct = data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0';
           return `
             <div class="rev-row${i < 3 ? ' top-row' : ''}">
               <span class="rev-rank">${i + 1}</span>
@@ -541,6 +816,8 @@ function buildDashboardEl(type) {
     return el;
   }
   if (type === 'ytd') return buildYtdSlide(revenueData);
+  if (type === 'portfolio') return buildPortfolioSlide(revenueData);
+  if (type === 'budget') return buildBudgetSlide(revenueData);
   if (type === 'monthly') return buildMonthlySlide(revenueData);
   if (type === 'accounts') return buildAccountsSlide(revenueData);
   return buildYtdSlide(revenueData);
