@@ -124,6 +124,7 @@ function fitOverflowMoney(root) {
 function fitTvTables(root) {
   const slide = root || currentEl;
   if (!slide?.classList?.contains('rev-slide')) return;
+  if (slide.classList.contains('rev-slide-ytd')) return;
   const body = slide.querySelector('.rev-table-body');
   if (!body) return;
   const rows = body.querySelectorAll('.rev-row');
@@ -196,7 +197,8 @@ function fitSlide(root) {
 
   // Last resort scale — portfolio uses fixed CSS grid, skip to avoid clipping rows
   const panel = slide.classList.contains('rev-panel') ? slide : slide.querySelector('.rev-panel');
-  if (panel && !slide.classList.contains('rev-slide-portfolio')) {
+  if (panel && !slide.classList.contains('rev-slide-portfolio')
+      && !slide.classList.contains('rev-slide-ytd')) {
     panel.style.transform = '';
     panel.style.transformOrigin = '';
     panel.style.marginBottom = '';
@@ -694,7 +696,7 @@ function buildBudgetSlide(data) {
 
 function buildYtdSlide(data) {
   const el = document.createElement('div');
-  el.className = 'rev-slide rev-panel';
+  el.className = 'rev-slide rev-panel rev-slide-ytd';
   const latest = data.monthly[data.monthly.length - 1];
   const latestGrowth = latest?.growth;
   const chgClass = latestGrowth == null ? 'up' : (latestGrowth >= 0 ? 'up' : 'down');
@@ -704,39 +706,64 @@ function buildYtdSlide(data) {
   const milestone = getMilestone(data.ytdTotal);
   const top = data.topAccounts[0];
   const budgetSummary = data.budget?.summary;
-  const budgetInsight = budgetSummary ? `
-          <div class="rev-insight ${budgetSummary.status === 'failing' ? 'fail-bg' : ''}">
-            <div class="rev-insight-label">Budget Pace (${data.budget.throughLabel})</div>
-            <div class="rev-insight-val ${budgetSummary.variance >= 0 ? 'up' : 'down'}">${budgetSummary.pctOfBudget}% of YTD budget</div>
-            <div class="rev-insight-name">${budgetSummary.failingCount} behind · ${budgetSummary.atRiskCount} at risk</div>
-          </div>` : '';
+  const sorted = [...data.accounts].sort((a, b) => b.amount - a.amount);
+  const mid = Math.ceil(sorted.length / 2);
+  const left = sorted.slice(0, mid);
+  const right = sorted.slice(mid);
+
+  function ytdRow(a, rank) {
+    const pct = data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0';
+    return `
+      <div class="rev-row${rank === 1 ? ' top-row' : ''}">
+        <span class="rev-rank">${rank}</span>
+        <span class="rev-name" title="${a.name}"><span class="rev-code">${a.code}</span>${a.name}</span>
+        <span class="rev-price col-money">${moneyHtml(a.amount, { sm: true })}</span>
+        <span class="rev-chg up">${pct}%</span>
+      </div>`;
+  }
+
+  function ytdColumn(list, startRank) {
+    return `
+      <div class="rev-index-table-row">
+        <div class="rev-table-head">
+          <span>#</span><span>Product Name</span><span class="col-money">Premium</span><span>Share</span>
+        </div>
+        <div class="rev-table-body">
+          ${list.map((a, i) => ytdRow(a, startRank + i)).join('')}
+        </div>
+      </div>`;
+  }
 
   el.innerHTML = `
     ${panelHeader('YTD', 'Year-to-Date Premium Summary', 'Posted premium · ' + data.year, data.year)}
-    <div class="rev-index-body">
+    <div class="rev-ytd-body">
       ${milestone ? `<div class="rev-milestone ${milestone.cls}">${milestone.text}</div>` : ''}
 
-      <div class="rev-hero-row">
-        <div class="rev-hero-card">
+      <div class="rev-ytd-kpi">
+        <div class="rev-ytd-total">
           <div class="rev-index-label">Total Premium Collected</div>
           <div class="rev-index-amount-wrap">
             <div class="rev-index-amount">${moneyHtml(0, { hero: true })}</div>
           </div>
           <div class="rev-exact-tag">Exact posted figures · Oracle ERP</div>
         </div>
-        <div class="rev-insights">
-          <div class="rev-insight">
+        <div class="rev-ytd-stats">
+          <div class="rev-ytd-stat">
             <div class="rev-insight-label">Month on Month</div>
             <div class="rev-insight-val ${chgClass}">${chgText}</div>
           </div>
           ${top ? `
-          <div class="rev-insight highlight">
+          <div class="rev-ytd-stat highlight">
             <div class="rev-insight-label">Top Account</div>
             <div class="rev-insight-name">${top.name}</div>
             <div class="rev-insight-amt">${moneyHtml(top.amount, { sm: true })}</div>
           </div>` : ''}
-          ${budgetInsight}
-          <div class="rev-insight">
+          ${budgetSummary ? `
+          <div class="rev-ytd-stat ${budgetSummary.status === 'failing' ? 'fail-bg' : ''}">
+            <div class="rev-insight-label">Budget Pace (${data.budget.throughLabel})</div>
+            <div class="rev-insight-val ${budgetSummary.variance >= 0 ? 'up' : 'down'}">${budgetSummary.pctOfBudget}% of YTD budget</div>
+          </div>` : ''}
+          <div class="rev-ytd-stat">
             <div class="rev-insight-label">Portfolio</div>
             <div class="rev-insight-val num">${data.accountCount} accounts · ${data.monthCount} periods</div>
           </div>
@@ -744,24 +771,9 @@ function buildYtdSlide(data) {
       </div>
 
       <div class="rev-section-head">All Products by Premium · ${data.accountCount} accounts</div>
-      <div class="rev-index-table-row">
-        <div class="rev-table-head">
-          <span>#</span><span>Product Name</span><span class="col-money">Premium Amount</span><span>Share</span>
-        </div>
-        <div class="rev-table-body">
-          ${[...data.accounts].sort((a, b) => b.amount - a.amount).map((a, i) => {
-            const pct = data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0';
-            const rank = i + 1;
-            return `
-              <div class="rev-row${i === 0 ? ' top-row' : ''}">
-                <span class="rev-rank">${rank}</span>
-                <span class="rev-name" title="${a.name}"><span class="rev-code">${a.code}</span>${a.name}</span>
-                <span class="rev-price col-money">${moneyHtml(a.amount)}</span>
-                <span class="rev-chg up">${pct}%</span>
-                <div class="rev-share-bar" data-pct="${pct}"></div>
-              </div>`;
-          }).join('')}
-        </div>
+      <div class="rev-ytd-split">
+        ${ytdColumn(left, 1)}
+        ${ytdColumn(right, mid + 1)}
       </div>
     </div>`;
 
