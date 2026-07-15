@@ -26,6 +26,8 @@ const fmt = new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES',
 
 const SLIDE_LABELS = {
   ytd: 'YTD PREMIUM SUMMARY',
+  portfolio: 'EXPECTED VS ACTUAL',
+  budget: 'EXPECTED VS ACTUAL',
   monthly: 'MONTHLY PREMIUM TREND',
   accounts: 'ACCOUNT BREAKDOWN',
   image: 'MEDIA',
@@ -112,9 +114,9 @@ function fitTvTables(root) {
     return;
   }
 
-  const rowH = Math.max(40, Math.floor(bodyH / rows.length));
-  const fontPx = Math.min(15, Math.max(11, Math.round(rowH * 0.32)));
-  const rankSize = Math.min(28, Math.max(22, Math.round(rowH * 0.45)));
+  const rowH = Math.max(36, Math.floor(bodyH / rows.length));
+  const fontPx = Math.min(18, Math.max(13, Math.round(rowH * 0.36)));
+  const rankSize = Math.min(32, Math.max(22, Math.round(rowH * 0.48)));
 
   rows.forEach((row) => {
     row.style.height = rowH + 'px';
@@ -165,7 +167,10 @@ function refreshCurrentDashboard() {
   currentEl = newEl;
   old.classList.remove('active');
   setTimeout(() => old.remove(), 400);
-  requestAnimationFrame(() => fitTvTables(newEl));
+  requestAnimationFrame(() => {
+    fitTvTables(newEl);
+    fitScoreboard(newEl);
+  });
 }
 
 function animateBars(container, selector, attr, suffix = '%') {
@@ -194,10 +199,10 @@ function buildFeed(data) {
   if (!data) return;
   const items = [
     { code: 'YTD TOTAL', val: formatMoney(data.ytdTotal), chg: null },
-    ...data.accounts.slice(0, 6).map((a) => ({
+    ...[...data.accounts].sort((a, b) => b.amount - a.amount).map((a) => ({
       code: a.code,
       val: formatMoney(a.amount),
-      chg: ((a.amount / data.ytdTotal) * 100).toFixed(1)
+      chg: data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0'
     }))
   ];
 
@@ -373,6 +378,240 @@ function panelHeader(code, title, sub, badge) {
     </div>`;
 }
 
+function statusLabel(status) {
+  if (status === 'on_track') return 'ON TRACK';
+  if (status === 'at_risk') return 'AT RISK';
+  if (status === 'failing') return 'BEHIND';
+  if (status === 'untracked') return 'ACTUAL';
+  return '—';
+}
+
+function statusClass(status) {
+  if (status === 'on_track') return 'ok';
+  if (status === 'at_risk') return 'risk';
+  if (status === 'failing') return 'fail';
+  if (status === 'untracked') return 'plain';
+  return '';
+}
+
+function compactMoney(n) {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
+  if (abs >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (abs >= 1_000) return (n / 1_000).toFixed(0) + 'K';
+  return String(Math.round(n));
+}
+
+function buildPortfolioSlide(data) {
+  const el = document.createElement('div');
+  el.className = 'rev-slide rev-panel';
+  const b = data.budget;
+  if (!b?.segments?.length) {
+    const reason = !data.budget
+      ? 'Server is missing budget backend files (lib/budgets.js + data/budgets-2026.json). Redeploy and restart.'
+      : (!b.throughLabel || b.throughLabel === 'No posted months yet')
+        ? 'No posted months yet for budget pacing.'
+        : 'Budget file loaded but no product segments were built.';
+    el.innerHTML = `
+      ${panelHeader('PORTFOLIO', 'Expected vs Actual', 'All products · budget pace', data.year)}
+      <div class="rev-loading">${reason}</div>`;
+    return el;
+  }
+
+  const s = b.summary;
+  const products = [...(b.products || b.chart || b.lines)]
+    .sort((a, c) => Math.max(c.budgetYtd, c.actualYtd) - Math.max(a.budgetYtd, a.actualYtd));
+  const scaleMax = Math.max(...products.map((p) => Math.max(p.budgetYtd || 0, p.actualYtd || 0)), 1);
+  const gapLabel = s.variance < 0
+    ? `SHORT ${compactMoney(Math.abs(s.variance))}`
+    : `AHEAD ${compactMoney(s.variance)}`;
+
+  el.innerHTML = `
+    ${panelHeader('SCOREBOARD', 'Expected vs Actual Premium', 'All 12 products · YTD ' + b.throughLabel + ' · Book5 budget vs Oracle posted', data.year)}
+    <div class="rev-score-body">
+      <div class="rev-score-hero ${statusClass(s.status)}">
+        <div class="rev-score-box expected">
+          <div class="rev-score-tag">EXPECTED (BUDGET)</div>
+          <div class="rev-score-num">${moneyHtml(s.budgetYtd)}</div>
+          <div class="rev-score-sub">Book5 Overall Life · ${b.throughLabel}</div>
+        </div>
+        <div class="rev-score-vs">VS</div>
+        <div class="rev-score-box actual">
+          <div class="rev-score-tag accent">ACTUAL (POSTED)</div>
+          <div class="rev-score-num accent">${moneyHtml(s.actualYtd)}</div>
+          <div class="rev-score-sub">Oracle YTD total · matches summary</div>
+        </div>
+        <div class="rev-score-box gap ${s.variance < 0 ? 'fail' : 'ok'}">
+          <div class="rev-score-tag">${s.variance < 0 ? 'DEFICIT' : 'SURPLUS'}</div>
+          <div class="rev-score-num ${s.variance < 0 ? 'fail' : 'ok'}">${moneyHtml(Math.abs(s.variance))}</div>
+          <div class="rev-score-sub">${s.pctOfBudget}% of expected · ${gapLabel}</div>
+        </div>
+      </div>
+
+      <div class="rev-score-flags">
+        <span class="rev-flag fail">${s.failingCount} behind</span>
+        <span class="rev-flag risk">${s.atRiskCount} at risk</span>
+        <span class="rev-flag ok">${b.onTrackCount} on track</span>
+        <span class="rev-legend-note">${products.length} products · grey = expected · cyan/red = actual</span>
+      </div>
+
+      <div class="rev-score-table">
+        <div class="rev-score-head">
+          <span>#</span>
+          <span>Product</span>
+          <span class="col-money">Expected</span>
+          <span class="col-money">Actual</span>
+          <span>Pace</span>
+          <span class="col-money">Gap</span>
+          <span>Progress</span>
+        </div>
+        <div class="rev-score-rows">
+          ${products.map((p, i) => {
+            const isDef = (p.budgetYtd || 0) > 0 && p.variance < 0;
+            const isSur = (p.budgetYtd || 0) > 0 && p.variance > 0;
+            const expW = ((p.budgetYtd || 0) / scaleMax) * 100;
+            const actW = ((p.actualYtd || 0) / scaleMax) * 100;
+            const gapTxt = !(p.budgetYtd > 0)
+              ? '—'
+              : (isDef ? '−' : '+') + compactMoney(Math.abs(p.variance));
+            const pctTxt = p.pctOfBudget != null ? p.pctOfBudget + '%' : '—';
+            return `
+              <div class="rev-score-row ${statusClass(p.status)}">
+                <span class="rev-rank">${i + 1}</span>
+                <span class="rev-name" title="${p.fullName || p.name}">
+                  <span class="rev-code">${p.code || p.id || ''}</span>${p.shortName || p.name}
+                </span>
+                <span class="rev-price col-money muted">${moneyHtml(p.budgetYtd || 0, { sm: true })}</span>
+                <span class="rev-price col-money">${moneyHtml(p.actualYtd || 0, { sm: true })}</span>
+                <span class="rev-chg ${statusClass(p.status)}">${pctTxt}</span>
+                <span class="rev-gap ${isDef ? 'fail' : (isSur ? 'ok' : 'plain')}">${gapTxt}</span>
+                <span class="rev-score-bars">
+                  <span class="rev-score-bar exp" style="width:${Math.max(expW, 1)}%"></span>
+                  <span class="rev-score-bar act ${statusClass(p.status)}" style="width:${Math.max(actW, 1)}%"></span>
+                </span>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  requestAnimationFrame(() => fitScoreboard(el));
+  return el;
+}
+
+function fitScoreboard(root) {
+  const rowsWrap = root.querySelector('.rev-score-rows');
+  if (!rowsWrap) return;
+  const rows = rowsWrap.querySelectorAll('.rev-score-row');
+  if (!rows.length) return;
+  const h = rowsWrap.clientHeight;
+  if (h < 40) {
+    requestAnimationFrame(() => fitScoreboard(root));
+    return;
+  }
+  const rowH = Math.max(34, Math.floor(h / rows.length));
+  const fontPx = Math.min(17, Math.max(12, Math.round(rowH * 0.4)));
+  rows.forEach((row) => {
+    row.style.height = rowH + 'px';
+    row.style.minHeight = rowH + 'px';
+    row.style.fontSize = fontPx + 'px';
+    row.style.paddingTop = '0';
+    row.style.paddingBottom = '0';
+  });
+}
+
+function buildBudgetSlide(data) {
+  const el = document.createElement('div');
+  el.className = 'rev-slide rev-panel';
+  const b = data.budget;
+  if (!b?.lines?.length && !b?.products?.length) {
+    el.innerHTML = `
+      ${panelHeader('BUDGET', 'Expected vs Actual', 'No budget file loaded for ' + data.year, data.year)}
+      <div class="rev-loading">Add data/budgets-${data.year}.json to enable comparisons</div>`;
+    return el;
+  }
+
+  const s = b.summary;
+  const chart = [...(b.chart || b.products || b.lines)]
+    .sort((a, c) => Math.max(c.budgetYtd, c.actualYtd) - Math.max(a.budgetYtd, a.actualYtd));
+  const scaleMax = Math.max(...chart.map((l) => Math.max(l.budgetYtd || 0, l.actualYtd || 0)), 1);
+
+  const W = 1100;
+  const H = 320;
+  const padL = 48;
+  const padR = 10;
+  const padT = 18;
+  const padB = 52;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const n = chart.length;
+  const groupW = plotW / Math.max(n, 1);
+  const barW = Math.min(26, groupW * 0.34);
+  const yMax = scaleMax * 1.1;
+  const y = (v) => padT + plotH - (v / yMax) * plotH;
+  const gridVals = [0.25, 0.5, 0.75, 1].map((p) => yMax * p);
+
+  const chartSvg = `
+    <svg class="rev-vs-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Expected versus actual by product">
+      ${gridVals.map((gv) => `
+        <line class="rev-vs-grid" x1="${padL}" y1="${y(gv)}" x2="${W - padR}" y2="${y(gv)}" />
+        <text class="rev-vs-axis" x="${padL - 6}" y="${y(gv) + 4}" text-anchor="end">${compactMoney(gv)}</text>
+      `).join('')}
+      <line class="rev-vs-axis-line" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" />
+      <line class="rev-vs-axis-line" x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" />
+      ${chart.map((line, i) => {
+        const cx = padL + groupW * i + groupW / 2;
+        const bh = Math.max(padT + plotH - y(line.budgetYtd || 0), 2);
+        const ah = Math.max(padT + plotH - y(line.actualYtd || 0), 2);
+        const isDef = (line.budgetYtd || 0) > 0 && line.variance < 0;
+        const actualClass = !(line.budgetYtd > 0) ? 'plain' : (isDef ? 'fail' : 'ok');
+        return `
+          <g>
+            <rect class="rev-vs-col budget" x="${cx - barW - 2}" y="${y(line.budgetYtd || 0)}" width="${barW}" height="${bh}" rx="2" />
+            <rect class="rev-vs-col actual ${actualClass}" x="${cx + 2}" y="${y(line.actualYtd || 0)}" width="${barW}" height="${ah}" rx="2" />
+            <text class="rev-vs-col-lbl" x="${cx}" y="${H - 28}" text-anchor="middle">${line.code || ''}</text>
+            <text class="rev-vs-col-lbl sub" x="${cx}" y="${H - 14}" text-anchor="middle">${line.name}</text>
+            <text class="rev-vs-col-pct ${actualClass}" x="${cx}" y="${H - 2}" text-anchor="middle">${line.pctOfBudget != null ? line.pctOfBudget + '%' : '—'}</text>
+          </g>`;
+      }).join('')}
+    </svg>`;
+
+  el.innerHTML = `
+    ${panelHeader('COMPARE', 'Expected vs Actual', 'YTD ' + b.throughLabel + ' · grey = expected budget · colour = Oracle actual', data.year)}
+    <div class="rev-budget-body vs-body tight">
+      <div class="rev-score-hero compact ${statusClass(s.status)}">
+        <div class="rev-score-box expected">
+          <div class="rev-score-tag">EXPECTED</div>
+          <div class="rev-score-num">${moneyHtml(s.budgetYtd)}</div>
+        </div>
+        <div class="rev-score-vs">VS</div>
+        <div class="rev-score-box actual">
+          <div class="rev-score-tag accent">ACTUAL</div>
+          <div class="rev-score-num accent">${moneyHtml(s.actualYtd)}</div>
+        </div>
+        <div class="rev-score-box gap ${s.variance < 0 ? 'fail' : 'ok'}">
+          <div class="rev-score-tag">${s.variance < 0 ? 'DEFICIT' : 'SURPLUS'}</div>
+          <div class="rev-score-num ${s.variance < 0 ? 'fail' : 'ok'}">${moneyHtml(Math.abs(s.variance))}</div>
+          <div class="rev-score-sub">${s.pctOfBudget}% delivered</div>
+        </div>
+      </div>
+
+      <div class="rev-vs-chart-wrap grow">
+        <div class="rev-vs-chart-head">
+          <div class="rev-section-head" style="margin:0">All 12 products — Expected (grey) beside Actual</div>
+          <div class="rev-vs-legend">
+            <span class="rev-vs-leg budget"><i></i>Expected</span>
+            <span class="rev-vs-leg actual"><i></i>Actual on/above</span>
+            <span class="rev-vs-leg fail"><i></i>Actual behind</span>
+          </div>
+        </div>
+        ${chartSvg}
+      </div>
+    </div>`;
+
+  return el;
+}
+
 function buildYtdSlide(data) {
   const el = document.createElement('div');
   el.className = 'rev-slide rev-panel';
@@ -384,6 +623,13 @@ function buildYtdSlide(data) {
     : `${latestGrowth >= 0 ? '+' : '−'}${Math.abs(latestGrowth)}% month on month`;
   const milestone = getMilestone(data.ytdTotal);
   const top = data.topAccounts[0];
+  const budgetSummary = data.budget?.summary;
+  const budgetInsight = budgetSummary ? `
+          <div class="rev-insight ${budgetSummary.status === 'failing' ? 'fail-bg' : ''}">
+            <div class="rev-insight-label">Budget Pace (${data.budget.throughLabel})</div>
+            <div class="rev-insight-val ${budgetSummary.variance >= 0 ? 'up' : 'down'}">${budgetSummary.pctOfBudget}% of YTD budget</div>
+            <div class="rev-insight-name">${budgetSummary.failingCount} behind · ${budgetSummary.atRiskCount} at risk</div>
+          </div>` : '';
 
   el.innerHTML = `
     ${panelHeader('YTD', 'Year-to-Date Premium Summary', 'Posted premium · ' + data.year, data.year)}
@@ -409,6 +655,7 @@ function buildYtdSlide(data) {
             <div class="rev-insight-name">${top.name}</div>
             <div class="rev-insight-amt">${moneyHtml(top.amount, { sm: true })}</div>
           </div>` : ''}
+          ${budgetInsight}
           <div class="rev-insight">
             <div class="rev-insight-label">Portfolio</div>
             <div class="rev-insight-val num">${data.accountCount} accounts · ${data.monthCount} periods</div>
@@ -416,14 +663,14 @@ function buildYtdSlide(data) {
         </div>
       </div>
 
-      <div class="rev-section-head">Leading Accounts by Premium</div>
+      <div class="rev-section-head">All Products by Premium · ${data.accountCount} accounts</div>
       <div class="rev-index-table-row">
         <div class="rev-table-head">
           <span>#</span><span>Product Name</span><span class="col-money">Premium Amount</span><span>Share</span>
         </div>
         <div class="rev-table-body">
-          ${[...data.accounts].sort((a, b) => b.amount - a.amount).slice(0, 8).map((a, i) => {
-            const pct = ((a.amount / data.ytdTotal) * 100).toFixed(1);
+          ${[...data.accounts].sort((a, b) => b.amount - a.amount).map((a, i) => {
+            const pct = data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0';
             const rank = i + 1;
             return `
               <div class="rev-row${i === 0 ? ' top-row' : ''}">
@@ -510,7 +757,7 @@ function buildAccountsSlide(data) {
   const sorted = [...data.accounts].sort((a, b) => b.amount - a.amount);
 
   el.innerHTML = `
-    ${panelHeader('ACCOUNTS', 'Premium Account Breakdown', data.accountCount + ' accounts · ranked by posted premium', data.year)}
+    ${panelHeader('ACCOUNTS', 'All Products by Premium', data.accountCount + ' accounts · full portfolio', data.year)}
     <div class="rev-board-body">
       <div class="rev-index-table-row">
       <div class="rev-table-head">
@@ -518,7 +765,7 @@ function buildAccountsSlide(data) {
       </div>
       <div class="rev-table-body">
         ${sorted.map((a, i) => {
-          const pct = ((a.amount / data.ytdTotal) * 100).toFixed(1);
+          const pct = data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0';
           return `
             <div class="rev-row${i < 3 ? ' top-row' : ''}">
               <span class="rev-rank">${i + 1}</span>
@@ -541,6 +788,8 @@ function buildDashboardEl(type) {
     return el;
   }
   if (type === 'ytd') return buildYtdSlide(revenueData);
+  if (type === 'portfolio') return buildPortfolioSlide(revenueData);
+  if (type === 'budget') return buildBudgetSlide(revenueData);
   if (type === 'monthly') return buildMonthlySlide(revenueData);
   if (type === 'accounts') return buildAccountsSlide(revenueData);
   return buildYtdSlide(revenueData);
@@ -578,7 +827,10 @@ function showCurrent() {
   currentEl = el;
 
   if (item.type === 'dashboard') {
-    requestAnimationFrame(() => fitTvTables(el));
+    requestAnimationFrame(() => {
+      fitTvTables(el);
+      fitScoreboard(el);
+    });
   }
 
   if (prevEl) {
@@ -611,5 +863,7 @@ document.addEventListener('click', () => {
 setTimeout(() => fullscreenHint.classList.add('hidden'), 6000);
 
 window.addEventListener('resize', () => {
-  if (currentEl?.classList?.contains('rev-slide')) fitTvTables(currentEl);
+  if (!currentEl?.classList?.contains('rev-slide')) return;
+  fitTvTables(currentEl);
+  fitScoreboard(currentEl);
 });

@@ -1,0 +1,83 @@
+{
+  "source": "Book5.xlsx · Overall 2026 Budgets Split",
+  "year": "2026",
+  "overall": {
+    "name": "Overall Life Business",
+    "annual": 2381500000,
+    "months": [293365565.89, 271160012.54, 194076501.87, 188104076.4, 217765486.99, 208089060.96, 160507836.49, 232529345.09, 192848500.18, 119288977.77, 158409056.6, 145355579.21]
+  },
+  "lines": [
+    {
+      "id": "group_life",
+      "name": "Group Life",
+      "shortName": "Group Life",
+      "segment": "Group",
+      "accounts": ["401001", "401009", "401010"],
+      "annual": 650000000,
+      "months": [115732309.56, 78228988.8, 38179616.52, 33457922.98, 71760885.56, 35741251.87, 44391188.26, 109593270.97, 36819794.99, 21690181.51, 38642753.39, 25761835.59]
+    },
+    {
+      "id": "group_credit",
+      "name": "Group Credit",
+      "shortName": "Group Credit",
+      "segment": "Group",
+      "accounts": ["401002"],
+      "annual": 600000000,
+      "months": [83372486.92, 88201295.19, 54601350.62, 83210335.11, 48052218.54, 61698669.49, 36582262.45, 35133676.06, 44807997.71, 18626985.58, 25682236.81, 20030485.53]
+    },
+    {
+      "id": "mortgages",
+      "name": "Mortgages",
+      "shortName": "Mortgages",
+      "segment": "Group",
+      "accounts": ["401003"],
+      "annual": 0,
+      "months": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      "id": "individual",
+      "name": "Individual Life",
+      "shortName": "Individual Life",
+      "segment": "Individual",
+      "accounts": ["400002", "400003", "400004"],
+      "annual": 118500000,
+      "months": [6868554.8, 6845109.55, 9309138.29, 13410125.73, 7329815.0, 13702672.3, 12013281.49, 9094964.91, 9246864.92, 9710208.09, 9351400.15, 11617864.76]
+    },
+    {
+      "id": "investments",
+      "name": "Investments (Twinsave Cohort)",
+      "shortName": "Investments",
+      "segment": "Investments",
+      "accounts": ["400001"],
+      "annual": 400000000,
+      "months": [45538236.58, 44647284.1, 31139533.88, 21107511.4, 33912659.37, 51661683.29, 15880443.19, 29668502.52, 43561037.8, 15168826.3, 34418328.77, 33295952.81]
+    },
+    {
+      "id": "group_pension",
+      "name": "Group Pension",
+      "shortName": "Group Pension",
+      "segment": "Pension",
+      "accounts": ["401004"],
+      "annual": 124000000,
+      "months": [7694628.41, 7870484.97, 5234886.62, 2869884.13, 3082070.24, 8448045.63, 10010657.0, 16223678.79, 18165664.21, 18016915.82, 9597082.2, 16786001.98]
+    },
+    {
+      "id": "individual_pension",
+      "name": "Individual Pension",
+      "shortName": "Ind. Pension",
+      "segment": "Pension",
+      "accounts": ["401008"],
+      "annual": 300000000,
+      "months": [18613399.22, 32569627.51, 39188340.71, 17088704.82, 37918052.5, 21236431.09, 25609940.76, 16696430.64, 24454256.66, 20386789.87, 24342449.72, 21895576.49]
+    },
+    {
+      "id": "umbrella",
+      "name": "Umbrella (Incl NSSF Tier II)",
+      "shortName": "Umbrella",
+      "segment": "Pension",
+      "accounts": ["401005"],
+      "annual": 176000000,
+      "months": [12000000, 12000000, 15200000, 15200000, 15200000, 15200000, 15200000, 15200000, 15200000, 15200000, 15200000, 15200000]
+    }
+  ]
+}
