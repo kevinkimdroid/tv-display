@@ -62,12 +62,21 @@ const settingsSrc = path.join(root, 'data', 'settings.json');
 const playlistSrc = path.join(root, 'data', 'playlist.json');
 fs.writeFileSync(
   path.join(distDir, 'data', 'settings.json'),
-  fs.existsSync(settingsSrc) ? fs.readFileSync(settingsSrc) : '{"revenue":{"enabled":true,"year":"2026","slideDuration":14,"slides":["ytd","monthly","accounts"]}}'
+  fs.existsSync(settingsSrc)
+    ? fs.readFileSync(settingsSrc)
+    : '{"revenue":{"enabled":true,"year":"2026","slideDuration":14,"slides":["portfolio","ytd","budget","monthly","accounts"]}}'
 );
 fs.writeFileSync(
   path.join(distDir, 'data', 'playlist.json'),
   fs.existsSync(playlistSrc) ? fs.readFileSync(playlistSrc) : '[]'
 );
+
+// Budget files required for portfolio / actual-vs-budget slides
+fs.readdirSync(path.join(root, 'data'))
+  .filter((f) => /^budgets-\d{4}\.json$/i.test(f))
+  .forEach((f) => {
+    fs.copyFileSync(path.join(root, 'data', f), path.join(distDir, 'data', f));
+  });
 
 // ── Server helper scripts (Windows) ─────────────────────────────────────
 

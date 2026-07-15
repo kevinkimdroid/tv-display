@@ -2,7 +2,7 @@
   "revenue": {
     "enabled": true,
     "year": "2026",
-    "slideDuration": 14,
+    "slideDuration": 18,
     "slides": ["portfolio", "ytd", "budget", "monthly", "accounts"]
   }
 }
