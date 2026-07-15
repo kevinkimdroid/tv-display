@@ -194,9 +194,9 @@ function fitSlide(root) {
   slide.querySelectorAll('.rev-index-amount, .rev-score-num').forEach(fitAmountFont);
   fitOverflowMoney(slide);
 
-  // Last resort: if panel still taller than stage, scale it down slightly
+  // Last resort scale — portfolio uses fixed CSS grid, skip to avoid clipping rows
   const panel = slide.classList.contains('rev-panel') ? slide : slide.querySelector('.rev-panel');
-  if (panel) {
+  if (panel && !slide.classList.contains('rev-slide-portfolio')) {
     panel.style.transform = '';
     panel.style.transformOrigin = '';
     panel.style.marginBottom = '';
@@ -475,9 +475,9 @@ function compactMoney(n) {
 
 function buildPortfolioSlide(data) {
   const el = document.createElement('div');
-  el.className = 'rev-slide rev-panel';
+  el.className = 'rev-slide rev-panel rev-slide-portfolio';
   const b = data.budget;
-  if (!b?.segments?.length) {
+  if (!b?.products?.length && !b?.lines?.length) {
     const reason = !data.budget
       ? 'Server is missing budget backend files (lib/budgets.js + data/budgets-2026.json). Redeploy and restart.'
       : (!b.throughLabel || b.throughLabel === 'No posted months yet')
@@ -496,17 +496,58 @@ function buildPortfolioSlide(data) {
   const gapLabel = s.variance < 0
     ? `SHORT ${compactMoney(Math.abs(s.variance))}`
     : `AHEAD ${compactMoney(s.variance)}`;
+  const mid = Math.ceil(products.length / 2);
+  const left = products.slice(0, mid);
+  const right = products.slice(mid);
+
+  function portfolioRow(p, rank) {
+    const isDef = (p.budgetYtd || 0) > 0 && p.variance < 0;
+    const isSur = (p.budgetYtd || 0) > 0 && p.variance > 0;
+    const expW = ((p.budgetYtd || 0) / scaleMax) * 100;
+    const actW = ((p.actualYtd || 0) / scaleMax) * 100;
+    const gapTxt = !(p.budgetYtd > 0)
+      ? '—'
+      : (isDef ? '−' : '+') + compactMoney(Math.abs(p.variance));
+    const pctTxt = p.pctOfBudget != null ? p.pctOfBudget + '%' : '—';
+    return `
+      <div class="rev-score-row ${statusClass(p.status)}">
+        <span class="rev-rank">${rank}</span>
+        <span class="rev-name" title="${p.fullName || p.name}">
+          <span class="rev-code">${p.code || p.id || ''}</span>${p.shortName || p.name}
+        </span>
+        <span class="rev-price col-money muted">${moneyHtml(p.budgetYtd || 0, { sm: true })}</span>
+        <span class="rev-price col-money">${moneyHtml(p.actualYtd || 0, { sm: true })}</span>
+        <span class="rev-chg ${statusClass(p.status)}">${pctTxt}</span>
+        <span class="rev-gap ${isDef ? 'fail' : (isSur ? 'ok' : 'plain')}">${gapTxt}</span>
+        <span class="rev-score-bars">
+          <span class="rev-score-bar exp" style="width:${Math.max(expW, 1)}%"></span>
+          <span class="rev-score-bar act ${statusClass(p.status)}" style="width:${Math.max(actW, 1)}%"></span>
+        </span>
+      </div>`;
+  }
+
+  function portfolioColumn(list, startRank) {
+    return `
+      <div class="rev-score-table">
+        <div class="rev-score-head">
+          <span>#</span><span>Product</span><span class="col-money">Expected</span>
+          <span class="col-money">Actual</span><span>Pace</span><span class="col-money">Gap</span><span>Progress</span>
+        </div>
+        <div class="rev-score-rows">
+          ${list.map((p, i) => portfolioRow(p, startRank + i)).join('')}
+        </div>
+      </div>`;
+  }
 
   el.innerHTML = `
-    ${panelHeader('SCOREBOARD', 'Expected vs Actual Premium', 'All 12 products · YTD ' + b.throughLabel + ' · Book5 budget vs Oracle posted', data.year)}
+    ${panelHeader('SCOREBOARD', 'Expected vs Actual Premium', 'All ' + products.length + ' products · YTD ' + b.throughLabel + ' · Book5 budget vs Oracle posted', data.year)}
     <div class="rev-score-body">
-      <div class="rev-score-hero ${statusClass(s.status)}">
+      <div class="rev-score-kpi ${statusClass(s.status)}">
         <div class="rev-score-box expected">
           <div class="rev-score-tag">EXPECTED (BUDGET)</div>
           <div class="rev-score-num">${moneyHtml(s.budgetYtd)}</div>
           <div class="rev-score-sub">Book5 Overall Life · ${b.throughLabel}</div>
         </div>
-        <div class="rev-score-vs">VS</div>
         <div class="rev-score-box actual">
           <div class="rev-score-tag accent">ACTUAL (POSTED)</div>
           <div class="rev-score-num accent">${moneyHtml(s.actualYtd)}</div>
@@ -526,43 +567,9 @@ function buildPortfolioSlide(data) {
         <span class="rev-legend-note">${products.length} products · grey = expected · cyan/red = actual</span>
       </div>
 
-      <div class="rev-score-table">
-        <div class="rev-score-head">
-          <span>#</span>
-          <span>Product</span>
-          <span class="col-money">Expected</span>
-          <span class="col-money">Actual</span>
-          <span>Pace</span>
-          <span class="col-money">Gap</span>
-          <span>Progress</span>
-        </div>
-        <div class="rev-score-rows">
-          ${products.map((p, i) => {
-            const isDef = (p.budgetYtd || 0) > 0 && p.variance < 0;
-            const isSur = (p.budgetYtd || 0) > 0 && p.variance > 0;
-            const expW = ((p.budgetYtd || 0) / scaleMax) * 100;
-            const actW = ((p.actualYtd || 0) / scaleMax) * 100;
-            const gapTxt = !(p.budgetYtd > 0)
-              ? '—'
-              : (isDef ? '−' : '+') + compactMoney(Math.abs(p.variance));
-            const pctTxt = p.pctOfBudget != null ? p.pctOfBudget + '%' : '—';
-            return `
-              <div class="rev-score-row ${statusClass(p.status)}">
-                <span class="rev-rank">${i + 1}</span>
-                <span class="rev-name" title="${p.fullName || p.name}">
-                  <span class="rev-code">${p.code || p.id || ''}</span>${p.shortName || p.name}
-                </span>
-                <span class="rev-price col-money muted">${moneyHtml(p.budgetYtd || 0, { sm: true })}</span>
-                <span class="rev-price col-money">${moneyHtml(p.actualYtd || 0, { sm: true })}</span>
-                <span class="rev-chg ${statusClass(p.status)}">${pctTxt}</span>
-                <span class="rev-gap ${isDef ? 'fail' : (isSur ? 'ok' : 'plain')}">${gapTxt}</span>
-                <span class="rev-score-bars">
-                  <span class="rev-score-bar exp" style="width:${Math.max(expW, 1)}%"></span>
-                  <span class="rev-score-bar act ${statusClass(p.status)}" style="width:${Math.max(actW, 1)}%"></span>
-                </span>
-              </div>`;
-          }).join('')}
-        </div>
+      <div class="rev-score-split">
+        ${portfolioColumn(left, 1)}
+        ${portfolioColumn(right, mid + 1)}
       </div>
     </div>`;
 
@@ -571,6 +578,7 @@ function buildPortfolioSlide(data) {
 }
 
 function fitScoreboard(root) {
+  if (root.classList?.contains('rev-slide-portfolio')) return;
   const rowsWrap = root.querySelector('.rev-score-rows');
   if (!rowsWrap) return;
   const rows = rowsWrap.querySelectorAll('.rev-score-row');

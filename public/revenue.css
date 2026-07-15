@@ -1318,6 +1318,122 @@
 .rev-score-bar.act.fail { background: #E53935; }
 .rev-score-bar.act.plain { background: #78909C; }
 
+/* ── Portfolio slide: 12 products in 2×6 grid (always fits fullscreen TV) ── */
+.rev-slide-portfolio .rev-score-body {
+  gap: 4px;
+  padding: 4px 8px 6px;
+}
+.rev-slide-portfolio .rev-header {
+  min-height: 40px;
+  padding: 6px 12px;
+}
+.rev-slide-portfolio .rev-score-kpi {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  flex-shrink: 0;
+}
+.rev-slide-portfolio .rev-score-box {
+  padding: 6px 10px;
+}
+.rev-slide-portfolio .rev-score-tag {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+.rev-slide-portfolio .rev-score-num {
+  font-size: clamp(12px, 1.35vw, 20px);
+  margin-top: 1px;
+}
+.rev-slide-portfolio .rev-score-sub {
+  font-size: 9px;
+  margin-top: 2px;
+}
+.rev-slide-portfolio .rev-score-flags {
+  flex-shrink: 0;
+  gap: 6px;
+  min-height: 0;
+}
+.rev-slide-portfolio .rev-flag {
+  font-size: 10px;
+  padding: 3px 8px;
+}
+.rev-slide-portfolio .rev-score-flags .rev-legend-note {
+  font-size: 9px;
+}
+.rev-slide-portfolio .rev-score-split {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  overflow: hidden;
+}
+.rev-slide-portfolio .rev-score-table {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.rev-slide-portfolio .rev-score-head {
+  height: 24px;
+  min-height: 24px;
+  font-size: 8px;
+  padding: 0 6px;
+  gap: 4px;
+  grid-template-columns: 24px minmax(0, 1.15fr) minmax(64px, 0.85fr) minmax(64px, 0.85fr) 40px 44px minmax(48px, 0.75fr);
+}
+.rev-slide-portfolio .rev-score-rows {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+.rev-slide-portfolio .rev-score-row {
+  min-height: 0;
+  max-height: none;
+  height: auto;
+  font-size: clamp(9px, 0.95vw, 12px);
+  padding: 0 6px;
+  gap: 4px;
+  grid-template-columns: 24px minmax(0, 1.15fr) minmax(64px, 0.85fr) minmax(64px, 0.85fr) 40px 44px minmax(48px, 0.75fr);
+  align-items: center;
+  overflow: hidden;
+}
+.rev-slide-portfolio .rev-rank {
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+}
+.rev-slide-portfolio .rev-code {
+  font-size: 8px;
+  margin-right: 4px;
+  padding: 0 3px;
+}
+.rev-slide-portfolio .rev-name {
+  font-size: inherit;
+  padding-right: 4px;
+}
+.rev-slide-portfolio .rev-price {
+  font-size: inherit;
+}
+.rev-slide-portfolio .rev-chg,
+.rev-slide-portfolio .rev-gap {
+  font-size: inherit;
+}
+.rev-slide-portfolio .rev-score-bars {
+  height: 10px;
+  min-width: 0;
+}
+.rev-slide-portfolio .money.sm .money-cur {
+  font-size: 0.42em;
+}
+.rev-slide-portfolio .money.sm .money-num {
+  font-size: 1em;
+  letter-spacing: 0.02em;
+}
+
 .rev-budget-body.vs-body.tight {
   gap: 8px;
   padding: 6px 10px 8px;
@@ -1413,7 +1529,26 @@
     padding: 6px 12px;
   }
 
-  /* Scoreboard — Expected vs Actual */
+  /* Portfolio split columns on large TVs */
+  .rev-slide-portfolio .rev-score-split {
+    gap: 10px;
+  }
+  .rev-slide-portfolio .rev-score-head {
+    height: 28px;
+    min-height: 28px;
+    font-size: 9px;
+  }
+  .rev-slide-portfolio .rev-score-row {
+    font-size: clamp(10px, 0.85vw, 13px);
+  }
+  .rev-slide-portfolio .rev-score-bars {
+    height: 12px;
+  }
+  .rev-slide-portfolio .rev-score-num {
+    font-size: clamp(14px, 1.5vw, 22px);
+  }
+
+  /* Scoreboard — Expected vs Actual (budget compare slide) */
   .rev-score-body {
     gap: 8px;
     padding: 8px 14px 10px;
