@@ -5,3 +5,5 @@ uploads/*
 dist/
 tv-display-deploy.zip
 .deploy-staging/
+.tv-display.pid
+tv-display.log

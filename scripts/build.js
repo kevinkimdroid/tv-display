@@ -183,6 +183,12 @@ echo "Starting on http://0.0.0.0:3000"
 node server.js
 `);
 
+const linuxScripts = ['stop.sh', 'start-daemon.sh', 'restart.sh'];
+linuxScripts.forEach((name) => {
+  const src = path.join(root, name);
+  if (fs.existsSync(src)) fs.copyFileSync(src, path.join(distDir, name));
+});
+
 // ── Quick readme for server admin ───────────────────────────────────────
 
 write('SERVER-README.txt', `GEMINIA LIFE INSURANCE — TV DISPLAY
@@ -200,10 +206,16 @@ For always-on (survives reboot):
 
 QUICK START (Linux)
 -------------------
-   chmod +x install.sh start.sh
+   chmod +x install.sh start-daemon.sh stop.sh restart.sh
    ./install.sh
    nano .env
-   ./start.sh
+   ./start-daemon.sh          # background (survives logout)
+
+RESTART / STOP (Linux — only affects TV Display, not CRM)
+---------------------------------------------------------
+   ./restart.sh                 # stop + start in background
+   ./stop.sh                    # stop only
+   tail -f tv-display.log       # view logs
 
 OPEN FIREWALL (Windows PowerShell as Admin)
 -------------------------------------------

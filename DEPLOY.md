@@ -90,10 +90,18 @@ cp .env.example .env
 nano .env          # add Oracle credentials
 
 npm install --production
+
+# Option A: Background with restart scripts (recommended on shared servers)
+chmod +x start-daemon.sh stop.sh restart.sh
+./start-daemon.sh
+# Later: ./restart.sh   (stops only TV Display, not CRM or other apps)
+
+# Option B: PM2 (keeps running after reboot)
 npm install -g pm2
 pm2 start ecosystem.config.js
 pm2 save
 pm2 startup
+# Later: pm2 restart tv-display
 
 # Firewall (Ubuntu)
 sudo ufw allow 3000/tcp
