@@ -64,7 +64,7 @@ fs.writeFileSync(
   path.join(distDir, 'data', 'settings.json'),
   fs.existsSync(settingsSrc)
     ? fs.readFileSync(settingsSrc)
-    : '{"revenue":{"enabled":true,"year":"2026","slideDuration":14,"slides":["portfolio","ytd","budget","monthly","accounts"]}}'
+    : '{"revenue":{"enabled":true,"year":"2026","slideDuration":18,"slideDurations":{"portfolio":180},"slides":["portfolio","ytd","budget","monthly","accounts"]}}'
 );
 fs.writeFileSync(
   path.join(distDir, 'data', 'playlist.json'),

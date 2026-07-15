@@ -3,6 +3,9 @@
     "enabled": true,
     "year": "2026",
     "slideDuration": 18,
+    "slideDurations": {
+      "portfolio": 180
+    },
     "slides": ["portfolio", "ytd", "budget", "monthly", "accounts"]
   }
 }

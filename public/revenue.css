@@ -1569,6 +1569,153 @@
   margin-right: 4px;
 }
 
+/* ── Monthly slide: dual-row chart when 7+ months, compact strip ── */
+.rev-slide-monthly .rev-header {
+  min-height: 40px;
+  padding: 6px 12px;
+}
+.rev-slide-monthly .rev-monthly-body {
+  gap: 4px;
+  padding: 4px 8px 6px;
+}
+.rev-slide-monthly .rev-milestone {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-size: clamp(10px, 1vw, 13px);
+  margin-bottom: 0;
+}
+.rev-monthly-charts {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+.rev-monthly-charts.split {
+  gap: 4px;
+}
+.rev-monthly-charts.split .rev-chart-area {
+  flex: 1;
+  min-height: 0;
+}
+.rev-slide-monthly .rev-chart-area {
+  flex: 1;
+  min-height: 0;
+  padding: 8px 6px 0;
+  gap: 4px;
+}
+.rev-slide-monthly .rev-chart-area::before {
+  inset: 8px 6px 0;
+}
+.rev-slide-monthly .rev-candle-col {
+  gap: 2px;
+}
+.rev-slide-monthly .rev-candle-chg {
+  font-size: clamp(8px, 0.75vw, 10px);
+  min-height: 12px;
+}
+.rev-slide-monthly .rev-candle-wrap {
+  flex: 1;
+  min-height: 28px;
+  width: 72%;
+}
+.rev-slide-monthly .rev-candle-val {
+  font-size: clamp(8px, 0.75vw, 11px);
+}
+.rev-slide-monthly .rev-candle-lbl {
+  font-size: clamp(9px, 0.8vw, 11px);
+  padding-bottom: 4px;
+}
+.rev-slide-monthly .rev-best-badge {
+  font-size: 7px;
+  padding: 1px 5px;
+}
+.rev-strip-compact {
+  flex-shrink: 0;
+  gap: 6px;
+}
+.rev-strip-compact .rev-strip-item {
+  padding: 5px 8px;
+}
+.rev-strip-compact .rev-strip-label {
+  font-size: 8px;
+}
+.rev-strip-compact .rev-strip-val {
+  font-size: clamp(9px, 0.85vw, 12px);
+  margin-top: 3px;
+}
+
+/* ── Accounts slide: 2×6 product grid ── */
+.rev-accounts-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px 6px;
+  overflow: hidden;
+}
+.rev-slide-accounts .rev-header {
+  min-height: 40px;
+  padding: 6px 12px;
+}
+.rev-slide-accounts .rev-section-head {
+  flex-shrink: 0;
+  font-size: 9px;
+  padding: 0 2px;
+}
+.rev-accounts-split {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  overflow: hidden;
+}
+.rev-slide-accounts .rev-index-table-row {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+.rev-slide-accounts .rev-table-head {
+  flex-shrink: 0;
+  min-height: 24px;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 8px;
+  grid-template-columns: 24px minmax(0, 1fr) minmax(72px, 1fr) 44px;
+}
+.rev-slide-accounts .rev-table-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+.rev-slide-accounts .rev-row {
+  min-height: 0;
+  max-height: none;
+  height: auto;
+  padding: 0 8px;
+  font-size: clamp(9px, 0.9vw, 12px);
+  grid-template-columns: 24px minmax(0, 1fr) minmax(72px, 1fr) 44px;
+  grid-template-rows: 1fr;
+  align-items: center;
+}
+.rev-slide-accounts .rev-rank {
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+}
+.rev-slide-accounts .rev-code {
+  font-size: 8px;
+  margin-right: 4px;
+}
+
 .rev-budget-body.vs-body.tight {
   gap: 8px;
   padding: 6px 10px 8px;
@@ -1698,6 +1845,28 @@
     font-size: clamp(10px, 0.85vw, 13px);
   }
   .rev-slide-ytd .rev-section-head {
+    font-size: clamp(11px, 1vw, 14px);
+  }
+
+  .rev-slide-monthly .rev-candle-val {
+    font-size: clamp(9px, 0.8vw, 12px);
+  }
+  .rev-slide-monthly .rev-candle-lbl {
+    font-size: clamp(10px, 0.85vw, 12px);
+  }
+  .rev-strip-compact .rev-strip-val {
+    font-size: clamp(10px, 0.9vw, 13px);
+  }
+
+  .rev-slide-accounts .rev-table-head {
+    min-height: 28px;
+    height: 28px;
+    font-size: 9px;
+  }
+  .rev-slide-accounts .rev-row {
+    font-size: clamp(10px, 0.85vw, 13px);
+  }
+  .rev-slide-accounts .rev-section-head {
     font-size: clamp(11px, 1vw, 14px);
   }
 

@@ -124,7 +124,7 @@ function fitOverflowMoney(root) {
 function fitTvTables(root) {
   const slide = root || currentEl;
   if (!slide?.classList?.contains('rev-slide')) return;
-  if (slide.classList.contains('rev-slide-ytd')) return;
+  if (slide.classList.contains('rev-slide-ytd') || slide.classList.contains('rev-slide-accounts')) return;
   const body = slide.querySelector('.rev-table-body');
   if (!body) return;
   const rows = body.querySelectorAll('.rev-row');
@@ -166,6 +166,7 @@ function fitTvTables(root) {
 }
 
 function fitMonthlyChart(root) {
+  if (root.classList?.contains('rev-slide-monthly')) return;
   const area = root.querySelector('.rev-chart-area');
   if (!area) return;
   const wraps = area.querySelectorAll('.rev-candle-wrap');
@@ -197,8 +198,11 @@ function fitSlide(root) {
 
   // Last resort scale — portfolio uses fixed CSS grid, skip to avoid clipping rows
   const panel = slide.classList.contains('rev-panel') ? slide : slide.querySelector('.rev-panel');
-  if (panel && !slide.classList.contains('rev-slide-portfolio')
-      && !slide.classList.contains('rev-slide-ytd')) {
+  const fixedLayout = slide.classList.contains('rev-slide-portfolio')
+    || slide.classList.contains('rev-slide-ytd')
+    || slide.classList.contains('rev-slide-monthly')
+    || slide.classList.contains('rev-slide-accounts');
+  if (panel && !fixedLayout) {
     panel.style.transform = '';
     panel.style.transformOrigin = '';
     panel.style.marginBottom = '';
@@ -320,8 +324,12 @@ function buildSlideList() {
   const rev = settings.revenue;
   if (rev?.enabled && revenueData) {
     const types = rev.slides || ['ytd', 'monthly', 'accounts'];
-    const duration = rev.slideDuration || 14;
-    types.forEach((type) => slides.push({ type: 'dashboard', dashboardType: type, duration }));
+    const defaultDuration = rev.slideDuration || 14;
+    const perSlide = rev.slideDurations || {};
+    types.forEach((type) => {
+      const duration = perSlide[type] > 0 ? perSlide[type] : defaultDuration;
+      slides.push({ type: 'dashboard', dashboardType: type, duration });
+    });
   }
   playlist.forEach((item) => slides.push(item));
   return slides;
@@ -788,53 +796,63 @@ function buildYtdSlide(data) {
 
 function buildMonthlySlide(data) {
   const el = document.createElement('div');
-  el.className = 'rev-slide rev-panel';
-  const maxAmt = Math.max(...data.monthly.map((m) => m.amount), 1);
-  const best = [...data.monthly].sort((a, b) => b.amount - a.amount)[0];
-  const worst = [...data.monthly].sort((a, b) => a.amount - b.amount)[0];
-  const withGrowth = data.monthly.filter((m) => m.growth != null);
+  el.className = 'rev-slide rev-panel rev-slide-monthly';
+  const months = data.monthly;
+  const maxAmt = Math.max(...months.map((m) => m.amount), 1);
+  const best = [...months].sort((a, b) => b.amount - a.amount)[0];
+  const worst = [...months].sort((a, b) => a.amount - b.amount)[0];
+  const withGrowth = months.filter((m) => m.growth != null);
   const avgGrowth = withGrowth.length
     ? (withGrowth.reduce((s, m) => s + m.growth, 0) / withGrowth.length).toFixed(1) : null;
   const upMonths = withGrowth.filter((m) => m.growth > 0).length;
 
+  function candleCol(m) {
+    const pct = (m.amount / maxAmt * 100).toFixed(1);
+    const dir = m.growth == null ? 'neutral' : (m.growth >= 0 ? 'up' : 'down');
+    const chgText = m.growth == null ? '—' : `${m.growth >= 0 ? '+' : '−'}${Math.abs(m.growth)}%`;
+    const isBest = best && m.period === best.period;
+    return `
+      <div class="rev-candle-col${isBest ? ' best-month' : ''}">
+        ${isBest ? '<div class="rev-best-badge">BEST</div>' : ''}
+        <div class="rev-candle-chg ${dir}">${chgText}</div>
+        <div class="rev-candle-wrap">
+          <div class="rev-candle ${dir}" data-pct="${pct}"></div>
+        </div>
+        <div class="rev-candle-val">${moneyHtml(m.amount, { sm: true })}</div>
+        <div class="rev-candle-lbl">${m.shortLabel}</div>
+      </div>`;
+  }
+
+  const mid = Math.ceil(months.length / 2);
+  const chartRows = months.length > 6
+    ? [months.slice(0, mid), months.slice(mid)]
+    : [months];
+
   el.innerHTML = `
     ${panelHeader('MONTHLY', 'Monthly Premium Trend', 'Posted premium by accounting period', data.year)}
     <div class="rev-monthly-body">
-      ${best ? `<div class="rev-milestone green">Best month: ${best.label} — ${moneyHtml(best.amount)}</div>` : ''}
-      <div class="rev-chart-area">
-        ${data.monthly.map((m) => {
-          const pct = (m.amount / maxAmt * 100).toFixed(1);
-          const dir = m.growth == null ? 'neutral' : (m.growth >= 0 ? 'up' : 'down');
-          const chgText = m.growth == null ? '—' : `${m.growth >= 0 ? '+' : '−'}${Math.abs(m.growth)}%`;
-          const isBest = best && m.period === best.period;
-          return `
-            <div class="rev-candle-col${isBest ? ' best-month' : ''}">
-              ${isBest ? '<div class="rev-best-badge">BEST</div>' : ''}
-              <div class="rev-candle-chg ${dir}">${chgText}</div>
-              <div class="rev-candle-wrap">
-                <div class="rev-candle ${dir}" data-pct="${pct}"></div>
-              </div>
-              <div class="rev-candle-val">${moneyHtml(m.amount, { sm: true })}</div>
-              <div class="rev-candle-lbl">${m.shortLabel}</div>
-            </div>`;
-        }).join('')}
+      ${best ? `<div class="rev-milestone green">Best: ${best.shortLabel} — ${moneyHtml(best.amount, { sm: true })}</div>` : ''}
+      <div class="rev-monthly-charts${chartRows.length > 1 ? ' split' : ''}">
+        ${chartRows.map((row) => `
+          <div class="rev-chart-area">${row.map(candleCol).join('')}</div>
+        `).join('')}
       </div>
-      <div class="rev-strip">
+      <div class="rev-strip rev-strip-compact">
         <div class="rev-strip-item">
-          <div class="rev-strip-label">Highest Month</div>
-          <div class="rev-strip-val green">${best ? best.shortLabel + ' — ' : ''}${best ? moneyHtml(best.amount, { sm: true }) : '—'}</div>
+          <div class="rev-strip-label">Highest</div>
+          <div class="rev-strip-val green">${best ? best.shortLabel + ' ' : ''}${best ? moneyHtml(best.amount, { sm: true }) : '—'}</div>
         </div>
         <div class="rev-strip-item">
-          <div class="rev-strip-label">Lowest Month</div>
-          <div class="rev-strip-val red">${worst ? worst.shortLabel + ' — ' : ''}${worst ? moneyHtml(worst.amount, { sm: true }) : '—'}</div>
+          <div class="rev-strip-label">Lowest</div>
+          <div class="rev-strip-val red">${worst ? worst.shortLabel + ' ' : ''}${worst ? moneyHtml(worst.amount, { sm: true }) : '—'}</div>
         </div>
         <div class="rev-strip-item">
           <div class="rev-strip-label">Avg Growth</div>
           <div class="rev-strip-val num ${avgGrowth >= 0 ? 'green' : 'red'}">${avgGrowth != null ? (avgGrowth >= 0 ? '+' : '') + avgGrowth + '%' : '—'}</div>
         </div>
         <div class="rev-strip-item">
-          <div class="rev-strip-label">Growing Months</div>
-          <div class="rev-strip-val num amber">${upMonths} of ${withGrowth.length}</div>
+          <div class="rev-strip-label">Growing</div>
+          <div class="rev-strip-val num amber">${upMonths}/${withGrowth.length}</div>
         </div>
       </div>
     </div>`;
@@ -846,28 +864,42 @@ function buildMonthlySlide(data) {
 
 function buildAccountsSlide(data) {
   const el = document.createElement('div');
-  el.className = 'rev-slide rev-panel';
+  el.className = 'rev-slide rev-panel rev-slide-accounts';
   const sorted = [...data.accounts].sort((a, b) => b.amount - a.amount);
+  const mid = Math.ceil(sorted.length / 2);
+  const left = sorted.slice(0, mid);
+  const right = sorted.slice(mid);
+
+  function accountRow(a, rank) {
+    const pct = data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0';
+    return `
+      <div class="rev-row${rank <= 3 ? ' top-row' : ''}">
+        <span class="rev-rank">${rank}</span>
+        <span class="rev-name" title="${a.name}"><span class="rev-code">${a.code}</span>${a.name}</span>
+        <span class="rev-price col-money">${moneyHtml(a.amount, { sm: true })}</span>
+        <span class="rev-chg up">${pct}%</span>
+      </div>`;
+  }
+
+  function accountColumn(list, startRank) {
+    return `
+      <div class="rev-index-table-row">
+        <div class="rev-table-head">
+          <span>#</span><span>Product Name</span><span class="col-money">Premium</span><span>Share</span>
+        </div>
+        <div class="rev-table-body">
+          ${list.map((a, i) => accountRow(a, startRank + i)).join('')}
+        </div>
+      </div>`;
+  }
 
   el.innerHTML = `
     ${panelHeader('ACCOUNTS', 'All Products by Premium', data.accountCount + ' accounts · full portfolio', data.year)}
-    <div class="rev-board-body">
-      <div class="rev-index-table-row">
-      <div class="rev-table-head">
-        <span>#</span><span>Product Name</span><span class="col-money">Premium Amount</span><span>Share</span>
-      </div>
-      <div class="rev-table-body">
-        ${sorted.map((a, i) => {
-          const pct = data.ytdTotal > 0 ? ((a.amount / data.ytdTotal) * 100).toFixed(1) : '0.0';
-          return `
-            <div class="rev-row${i < 3 ? ' top-row' : ''}">
-              <span class="rev-rank">${i + 1}</span>
-              <span class="rev-name" title="${a.name}"><span class="rev-code">${a.code}</span>${a.name}</span>
-              <span class="rev-price col-money">${moneyHtml(a.amount)}</span>
-              <span class="rev-chg up">${pct}%</span>
-            </div>`;
-        }).join('')}
-      </div>
+    <div class="rev-accounts-body">
+      <div class="rev-section-head">All Products by Premium · ${data.accountCount} accounts · YTD ${formatMoney(data.ytdTotal)}</div>
+      <div class="rev-accounts-split">
+        ${accountColumn(left, 1)}
+        ${accountColumn(right, mid + 1)}
       </div>
     </div>`;
   requestAnimationFrame(() => fitSlide(el));
