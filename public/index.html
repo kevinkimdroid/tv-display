@@ -33,7 +33,9 @@
     --ticker-h: 38px;
     --header-h: 56px;
     --footer-h: 32px;
-    --chrome: calc(var(--header-h) + var(--ticker-h) + var(--footer-h));
+    /* Stage chrome = chrome above + below the content area (not double-counted) */
+    --chrome-below: calc(var(--ticker-h) + var(--footer-h));
+    --chrome: calc(var(--header-h) + var(--chrome-below));
   }
   html {
     font-size: clamp(14px, 1.15vmin, 18px);
@@ -290,11 +292,14 @@
   #stage {
     position: fixed;
     top: var(--header-h);
-    left: 0; right: 0;
-    bottom: var(--chrome);
-    height: calc(100vh - var(--chrome));
-    height: calc(100dvh - var(--chrome));
+    left: 0;
+    right: 0;
+    bottom: var(--chrome-below);
+    height: auto;
     z-index: 1;
+    overflow: hidden;
+    container-type: size;
+    container-name: stage;
   }
   #stage img, #stage video {
     position: absolute;

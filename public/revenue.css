@@ -7,11 +7,12 @@
 .money {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.4em;
+  gap: 0.35em;
   font-family: var(--font-money, 'IBM Plex Mono', monospace);
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings: "tnum" 1, "lnum" 1;
   white-space: nowrap;
+  max-width: 100%;
 }
 .money-cur {
   font-size: 0.44em;
@@ -255,10 +256,16 @@
   text-transform: uppercase;
   margin-bottom: 6px;
 }
-.rev-index-amount-wrap { max-width: 100%; overflow: hidden; }
+.rev-index-amount-wrap {
+  max-width: 100%;
+  overflow: hidden;
+  width: 100%;
+}
 .rev-index-amount {
-  font-size: clamp(26px, 4.8vmin, 52px);
-  line-height: 1;
+  font-size: clamp(22px, 4.2vmin, 52px);
+  line-height: 1.05;
+  max-width: 100%;
+  overflow: hidden;
 }
 .rev-exact-tag {
   font-size: clamp(9px, 1vmin, 11px);
@@ -348,7 +355,7 @@
 }
 .rev-table-head {
   display: grid;
-  grid-template-columns: 36px 1fr 1.1fr 56px;
+  grid-template-columns: 36px minmax(0, 1.4fr) minmax(110px, 1.35fr) 56px;
   padding: 7px 12px;
   background: rgba(0, 43, 92, 0.65);
   border-bottom: 1px solid rgba(0, 174, 239, 0.2);
@@ -369,13 +376,13 @@
 }
 .rev-row {
   display: grid;
-  grid-template-columns: 36px 1fr 1.1fr 56px;
+  grid-template-columns: 36px minmax(0, 1.4fr) minmax(110px, 1.35fr) 56px;
   grid-template-rows: 1fr auto;
   padding: 6px 12px 4px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   align-items: center;
   flex: 1 1 0;
-  min-height: 40px;
+  min-height: 0;
   position: relative;
   overflow: hidden;
 }
@@ -439,8 +446,10 @@
 .rev-price {
   text-align: right;
   font-size: clamp(10px, 1.15vmin, 13px);
+  min-width: 0;
+  overflow: hidden;
 }
-.rev-price .money { justify-content: flex-end; width: 100%; }
+.rev-price .money { justify-content: flex-end; width: 100%; max-width: 100%; }
 .col-money {
   background: rgba(0, 174, 239, 0.03);
 }
@@ -500,6 +509,8 @@
   position: relative;
   z-index: 1;
   min-width: 0;
+  height: 100%;
+  justify-content: flex-end;
 }
 .rev-candle-col.best-month .rev-candle {
   box-shadow: 0 0 24px rgba(0, 174, 239, 0.4);
@@ -524,7 +535,9 @@
 .rev-candle-chg.neutral { color: var(--gem-muted); }
 .rev-candle-wrap {
   width: 68%;
-  height: clamp(60px, 12vmin, 140px);
+  flex: 1 1 auto;
+  min-height: 40px;
+  height: auto;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -609,7 +622,7 @@
 }
 .rev-board-body .rev-table-head,
 .rev-board-body .rev-table-body .rev-row {
-  grid-template-columns: 36px 1fr 1.1fr 56px;
+  grid-template-columns: 36px minmax(0, 1.4fr) minmax(110px, 1.35fr) 56px;
 }
 
 .rev-milestone.fail {
@@ -1154,6 +1167,7 @@
   border-radius: 6px;
   padding: 8px 12px;
   min-width: 0;
+  overflow: hidden;
 }
 .rev-score-box.actual {
   border-color: rgba(0, 174, 239, 0.45);
@@ -1176,10 +1190,12 @@
 .rev-score-tag.accent { color: var(--gem-cyan); }
 .rev-score-num {
   margin-top: 2px;
-  font-size: clamp(15px, 1.6vw, 22px);
+  font-size: clamp(13px, 1.5vw, 22px);
   font-weight: 700;
   color: #fff;
   line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
 }
 .rev-score-num.accent .money-num,
 .rev-score-num.accent { color: var(--gem-cyan); }
@@ -1353,8 +1369,22 @@
   .rev-hero-row { grid-template-columns: 1fr; }
   .rev-insights { flex-direction: row; flex-wrap: wrap; }
   .rev-insight { flex: 1 1 45%; }
-  .rev-table-head, .rev-row { grid-template-columns: 32px 1fr 1fr 48px; }
+  .rev-table-head, .rev-row { grid-template-columns: 32px minmax(0, 1fr) minmax(90px, 1.2fr) 48px; }
   .rev-strip { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Short TV viewports — keep everything visible */
+@media (max-height: 800px) {
+  .rev-slide { padding: 4px 10px; }
+  .rev-header { min-height: 40px; padding: 6px 12px; }
+  .rev-index-body,
+  .rev-monthly-body,
+  .rev-board-body,
+  .rev-score-body,
+  .rev-budget-body { padding: 4px 8px 6px; gap: 4px; }
+  .rev-score-num { font-size: clamp(12px, 1.4vw, 18px); }
+  .rev-index-amount { font-size: clamp(20px, 3.6vmin, 40px); }
+  .rev-milestone { padding: 4px 8px; font-size: 11px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1495,7 +1525,7 @@
     font-size: clamp(13px, 1.15vw, 16px);
   }
   .rev-hero-row {
-    max-height: 30vh;
+    max-height: none;
   }
   .rev-strip {
     gap: 8px;

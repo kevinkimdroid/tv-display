@@ -36,6 +36,13 @@ const SLIDE_LABELS = {
 
 function formatMoney(n) { return fmt.format(Math.round(n)); }
 
+/** Full amount with thousands separators (TV-safe exact figure). */
+function formatMoneyValue(n) {
+  const formatted = fmt.format(Math.round(n)).replace(/\u00a0/g, ' ');
+  const spaceIdx = formatted.indexOf(' ');
+  return spaceIdx === -1 ? formatted : formatted.slice(spaceIdx + 1);
+}
+
 function moneyHtml(n, opts = {}) {
   const formatted = fmt.format(Math.round(n)).replace(/\u00a0/g, ' ');
   const spaceIdx = formatted.indexOf(' ');
@@ -46,12 +53,6 @@ function moneyHtml(n, opts = {}) {
   const currency = formatted.slice(0, spaceIdx);
   const value = formatted.slice(spaceIdx + 1);
   return `<span class="${cls}"><span class="money-cur">${currency}</span><span class="money-num">${value}</span></span>`;
-}
-
-function formatMoneyValue(n) {
-  const formatted = fmt.format(Math.round(n)).replace(/\u00a0/g, ' ');
-  const spaceIdx = formatted.indexOf(' ');
-  return spaceIdx === -1 ? formatted : formatted.slice(spaceIdx + 1);
 }
 
 function getMilestone(total) {
@@ -88,16 +89,36 @@ function animateCount(el, target, duration = 2000) {
 }
 
 function fitAmountFont(el) {
-  const wrap = el.closest('.rev-index-amount-wrap') || el.parentElement;
+  if (!el) return;
+  const wrap = el.closest('.rev-index-amount-wrap')
+    || el.closest('.rev-score-box')
+    || el.closest('.rev-hero-card')
+    || el.parentElement;
   const measureEl = el.querySelector('.money') || el;
   if (!wrap) return;
   el.style.fontSize = '';
   let size = parseFloat(getComputedStyle(el).fontSize);
-  const minSize = 22;
-  while (measureEl.scrollWidth > wrap.clientWidth - 8 && size > minSize) {
+  const minSize = 14;
+  let guard = 80;
+  while (guard-- > 0 && measureEl.scrollWidth > wrap.clientWidth - 10 && size > minSize) {
     size -= 1;
     el.style.fontSize = size + 'px';
   }
+}
+
+/** Shrink any money figure that overflows its cell. */
+function fitOverflowMoney(root) {
+  root.querySelectorAll('.money').forEach((money) => {
+    const cell = money.closest('.rev-price, .rev-score-num, .rev-index-amount, .rev-strip-val, .rev-insight-amt, .rev-candle-val') || money.parentElement;
+    if (!cell) return;
+    money.style.fontSize = '';
+    money.style.transform = '';
+    const avail = cell.clientWidth;
+    if (avail < 8 || money.scrollWidth <= avail) return;
+    const scale = Math.max(0.55, (avail - 4) / money.scrollWidth);
+    money.style.transform = `scale(${scale})`;
+    money.style.transformOrigin = money.closest('.rev-price, .col-money, .rev-candle-val') ? 'right center' : 'left center';
+  });
 }
 
 function fitTvTables(root) {
@@ -110,34 +131,85 @@ function fitTvTables(root) {
 
   const bodyH = body.clientHeight;
   if (bodyH < 20) {
-    requestAnimationFrame(() => fitTvTables(slide));
+    requestAnimationFrame(() => fitSlide(slide));
     return;
   }
 
-  const rowH = Math.max(36, Math.floor(bodyH / rows.length));
-  const fontPx = Math.min(18, Math.max(13, Math.round(rowH * 0.36)));
-  const rankSize = Math.min(32, Math.max(22, Math.round(rowH * 0.48)));
+  const rowH = Math.max(28, Math.floor(bodyH / rows.length));
+  const fontPx = Math.min(18, Math.max(11, Math.round(rowH * 0.34)));
+  const rankSize = Math.min(28, Math.max(18, Math.round(rowH * 0.45)));
+  const hasBar = !!body.querySelector('.rev-share-bar');
 
   rows.forEach((row) => {
     row.style.height = rowH + 'px';
     row.style.minHeight = rowH + 'px';
-    row.style.maxHeight = 'none';
+    row.style.maxHeight = rowH + 'px';
     row.style.fontSize = fontPx + 'px';
-    const pad = Math.max(6, Math.floor((rowH - fontPx) / 2));
-    row.style.paddingTop = pad + 'px';
-    row.style.paddingBottom = pad + 'px';
+    const vPad = hasBar
+      ? Math.max(2, Math.floor((rowH - fontPx - 6) / 2))
+      : Math.max(2, Math.floor((rowH - fontPx) / 2));
+    row.style.paddingTop = vPad + 'px';
+    row.style.paddingBottom = vPad + 'px';
     const rank = row.querySelector('.rev-rank');
     if (rank) {
       rank.style.width = rankSize + 'px';
       rank.style.height = rankSize + 'px';
-      rank.style.fontSize = Math.max(10, fontPx - 1) + 'px';
+      rank.style.fontSize = Math.max(9, fontPx - 1) + 'px';
     }
     const bar = row.querySelector('.rev-share-bar');
-    if (bar) bar.style.width = bar.dataset.pct + '%';
+    if (bar) {
+      bar.style.width = bar.dataset.pct + '%';
+      bar.style.height = Math.max(2, Math.min(4, Math.floor(rowH * 0.08))) + 'px';
+    }
   });
+}
 
-  const amount = slide.querySelector('.rev-index-amount');
-  if (amount) fitAmountFont(amount);
+function fitMonthlyChart(root) {
+  const area = root.querySelector('.rev-chart-area');
+  if (!area) return;
+  const wraps = area.querySelectorAll('.rev-candle-wrap');
+  if (!wraps.length) return;
+  const areaH = area.clientHeight;
+  if (areaH < 40) {
+    requestAnimationFrame(() => fitSlide(root));
+    return;
+  }
+  // Reserve space for badge, change %, value, label
+  const reserved = 72;
+  const barH = Math.max(48, areaH - reserved);
+  wraps.forEach((w) => {
+    w.style.height = barH + 'px';
+  });
+}
+
+/** Fit the active dashboard slide to the TV viewport — nothing clipped. */
+function fitSlide(root) {
+  const slide = root || currentEl;
+  if (!slide?.classList?.contains('rev-slide')) return;
+
+  fitTvTables(slide);
+  fitScoreboard(slide);
+  fitMonthlyChart(slide);
+
+  slide.querySelectorAll('.rev-index-amount, .rev-score-num').forEach(fitAmountFont);
+  fitOverflowMoney(slide);
+
+  // Last resort: if panel still taller than stage, scale it down slightly
+  const panel = slide.classList.contains('rev-panel') ? slide : slide.querySelector('.rev-panel');
+  if (panel) {
+    panel.style.transform = '';
+    panel.style.transformOrigin = '';
+    panel.style.marginBottom = '';
+    const stageH = slide.clientHeight || stage.clientHeight;
+    const panelH = panel.scrollHeight;
+    if (stageH > 40 && panelH > stageH + 4) {
+      const scale = Math.max(0.72, stageH / panelH);
+      panel.style.transform = `scale(${scale})`;
+      panel.style.transformOrigin = 'top center';
+      // transform doesn't shrink layout box — pull up leftover space
+      panel.style.marginBottom = `-${Math.ceil(panelH * (1 - scale))}px`;
+    }
+  }
 }
 
 const REVENUE_POLL_MS = 60 * 1000;
@@ -168,8 +240,7 @@ function refreshCurrentDashboard() {
   old.classList.remove('active');
   setTimeout(() => old.remove(), 400);
   requestAnimationFrame(() => {
-    fitTvTables(newEl);
-    fitScoreboard(newEl);
+    fitSlide(newEl);
   });
 }
 
@@ -495,7 +566,7 @@ function buildPortfolioSlide(data) {
       </div>
     </div>`;
 
-  requestAnimationFrame(() => fitScoreboard(el));
+  requestAnimationFrame(() => fitSlide(el));
   return el;
 }
 
@@ -506,14 +577,15 @@ function fitScoreboard(root) {
   if (!rows.length) return;
   const h = rowsWrap.clientHeight;
   if (h < 40) {
-    requestAnimationFrame(() => fitScoreboard(root));
+    requestAnimationFrame(() => fitSlide(root));
     return;
   }
-  const rowH = Math.max(34, Math.floor(h / rows.length));
-  const fontPx = Math.min(17, Math.max(12, Math.round(rowH * 0.4)));
+  const rowH = Math.max(26, Math.floor(h / rows.length));
+  const fontPx = Math.min(16, Math.max(10, Math.round(rowH * 0.38)));
   rows.forEach((row) => {
     row.style.height = rowH + 'px';
     row.style.minHeight = rowH + 'px';
+    row.style.maxHeight = rowH + 'px';
     row.style.fontSize = fontPx + 'px';
     row.style.paddingTop = '0';
     row.style.paddingBottom = '0';
@@ -687,9 +759,9 @@ function buildYtdSlide(data) {
 
   requestAnimationFrame(() => {
     animateCount(el.querySelector('.rev-index-amount'), data.ytdTotal);
-    fitTvTables(el);
-    setTimeout(() => fitTvTables(el), 100);
-    setTimeout(() => fitTvTables(el), 2200);
+    fitSlide(el);
+    setTimeout(() => fitSlide(el), 120);
+    setTimeout(() => fitSlide(el), 2200);
   });
   return el;
 }
@@ -748,6 +820,7 @@ function buildMonthlySlide(data) {
     </div>`;
 
   animateBars(el, '.rev-candle', 'height');
+  requestAnimationFrame(() => fitSlide(el));
   return el;
 }
 
@@ -777,6 +850,7 @@ function buildAccountsSlide(data) {
       </div>
       </div>
     </div>`;
+  requestAnimationFrame(() => fitSlide(el));
   return el;
 }
 
@@ -828,8 +902,8 @@ function showCurrent() {
 
   if (item.type === 'dashboard') {
     requestAnimationFrame(() => {
-      fitTvTables(el);
-      fitScoreboard(el);
+      fitSlide(el);
+      setTimeout(() => fitSlide(el), 80);
     });
   }
 
@@ -864,6 +938,5 @@ setTimeout(() => fullscreenHint.classList.add('hidden'), 6000);
 
 window.addEventListener('resize', () => {
   if (!currentEl?.classList?.contains('rev-slide')) return;
-  fitTvTables(currentEl);
-  fitScoreboard(currentEl);
+  fitSlide(currentEl);
 });
