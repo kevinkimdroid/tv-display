@@ -60,7 +60,10 @@
     pointer-events: none;
     background:
       radial-gradient(ellipse 80% 60% at 10% -10%, rgba(0,174,239,0.07), transparent 55%),
-      radial-gradient(ellipse 70% 50% at 100% 100%, rgba(0,74,153,0.12), transparent 50%);
+      radial-gradient(ellipse 70% 50% at 100% 100%, rgba(0,74,153,0.12), transparent 50%),
+      linear-gradient(rgba(0,174,239,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,174,239,0.025) 1px, transparent 1px);
+    background-size: auto, auto, 48px 48px, 48px 48px;
   }
 
   /* ── TOP BAR ── */
@@ -107,13 +110,45 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 14px;
+    gap: 12px;
+    min-width: 0;
+  }
+  .tb-center-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+  }
+  .tb-dept-title {
     font-size: clamp(11px, 1.05vw, 13px);
     font-weight: 600;
     letter-spacing: 0.14em;
-    color: var(--gem-label);
+    color: var(--gem-white);
     text-transform: uppercase;
     white-space: nowrap;
+  }
+  .tb-dept-sub {
+    font-size: clamp(9px, 0.85vw, 11px);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--gem-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: min(420px, 40vw);
+  }
+  .tb-fy-pill {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--font-money);
+    letter-spacing: 0.1em;
+    color: var(--gem-cyan);
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 174, 239, 0.35);
+    background: rgba(0, 174, 239, 0.08);
   }
   .tb-center-line {
     width: 28px;
@@ -127,7 +162,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 14px;
+    gap: 12px;
   }
   .tb-live-block {
     display: flex;
@@ -269,17 +304,73 @@
     transition: opacity 0.5s;
   }
   #footer.visible { opacity: 1; }
-  #slide-label { color: var(--gem-label); font-weight: 600; letter-spacing: 0.06em; font-size: 11px; }
-  #dots { display: flex; gap: 5px; justify-content: center; }
+  #slide-label {
+    color: var(--gem-label);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #slide-label::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    border-radius: 2px;
+    background: var(--gem-cyan);
+    flex-shrink: 0;
+  }
+  #dots {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .dot-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 36px;
+    opacity: 0.55;
+    transition: opacity 0.3s;
+  }
+  .dot-cell.active {
+    opacity: 1;
+  }
   .dot {
-    width: 20px; height: 3px;
-    background: rgba(255, 255, 255, 0.12);
+    width: 18px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 2px;
     transition: all 0.3s;
   }
-  .dot.active {
+  .dot-cell.active .dot {
     background: var(--gem-cyan);
-    width: 28px;
+    width: 26px;
+    box-shadow: 0 0 8px var(--gem-cyan-glow);
+  }
+  .dot-seq {
+    font-size: 7px;
+    font-family: var(--font-money);
+    font-weight: 600;
+    color: var(--gem-muted);
+    letter-spacing: 0.04em;
+  }
+  .dot-cell.active .dot-seq {
+    color: var(--gem-cyan);
+  }
+  .dot-lbl {
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--gem-muted);
+    white-space: nowrap;
+  }
+  .dot-cell.active .dot-lbl {
+    color: var(--gem-cyan-light);
   }
   #counter {
     text-align: right;
@@ -412,10 +503,11 @@
       --footer-h: 34px;
     }
     html { font-size: clamp(15px, 1.25vmin, 20px); }
-    .tb-center {
+    .tb-dept-title {
       font-size: clamp(13px, 1.15vw, 16px);
-      letter-spacing: 0.16em;
     }
+    .tb-dept-sub { font-size: clamp(10px, 0.95vw, 12px); }
+    .tb-fy-pill { font-size: 11px; padding: 5px 12px; }
     .tb-center-line { width: 28px; }
     .tb-logo-img { height: 38px; }
     #clock {
@@ -429,7 +521,9 @@
     .tick-item { font-size: 14px; gap: 8px; }
     .tick-sym { font-size: 12px; }
     .tick-val { font-size: 15px; font-weight: 700; }
-    #slide-label { font-size: 13px; letter-spacing: 0.08em; }
+    #slide-label { font-size: 13px; }
+    .dot-lbl { font-size: 8px; }
+    .dot-seq { font-size: 8px; }
     #counter { font-size: 13px; }
     #fullscreen-hint { font-size: 13px; padding: 10px 16px; }
   }
@@ -445,11 +539,203 @@
   @media (max-width: 1100px) {
     .tb-center { display: none; }
   }
+
+  /* ═══ GEMINIA BOARD V3 — inline (always loads with index.html) ═══ */
+  body.gem-v3 {
+    background: linear-gradient(135deg, #000814 0%, #001a33 40%, #000510 100%) !important;
+  }
+  body.gem-v3::before {
+    background:
+      radial-gradient(ellipse 100% 80% at 50% -20%, rgba(0,174,239,0.18), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(0,74,153,0.25), transparent 50%),
+      linear-gradient(rgba(0,174,239,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,174,239,0.04) 1px, transparent 1px) !important;
+    background-size: auto, auto, 40px 40px, 40px 40px !important;
+  }
+  #v3-splash {
+    position: fixed; inset: 0; z-index: 99999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    background: radial-gradient(circle at center, #001428 0%, #000510 100%);
+    animation: v3SplashHide 3s ease forwards;
+    pointer-events: none;
+  }
+  #v3-splash-title {
+    font-size: clamp(28px, 5vw, 56px);
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: #00AEEF;
+    text-shadow: 0 0 40px rgba(0,174,239,0.9), 0 0 80px rgba(0,174,239,0.4);
+  }
+  #v3-splash-sub {
+    font-size: clamp(12px, 1.5vw, 18px);
+    letter-spacing: 0.35em;
+    color: #7ddfff;
+    font-weight: 600;
+  }
+  @keyframes v3SplashHide {
+    0%, 65% { opacity: 1; }
+    100% { opacity: 0; visibility: hidden; }
+  }
+  body.gem-v3 #stage::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: linear-gradient(180deg, #00AEEF, #004A99, #00AEEF);
+    background-size: 100% 200%;
+    animation: v3Rail 4s linear infinite;
+    z-index: 50;
+    box-shadow: 0 0 24px rgba(0,174,239,0.8);
+  }
+  @keyframes v3Rail {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 200%; }
+  }
+  body.gem-v3 #topbar {
+    background: linear-gradient(180deg, #002850 0%, #001428 100%) !important;
+    border-bottom: 2px solid #00AEEF !important;
+    box-shadow: 0 4px 40px rgba(0,174,239,0.2) !important;
+  }
+  body.gem-v3 #ui-version {
+    background: linear-gradient(135deg, #00AEEF, #00ff88) !important;
+    color: #001428 !important;
+    font-size: 11px !important;
+    padding: 5px 12px !important;
+    border-radius: 20px !important;
+    box-shadow: 0 0 20px rgba(0,255,136,0.4) !important;
+    animation: v3BadgePulse 2s ease infinite;
+  }
+  @keyframes v3BadgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  body.gem-v3 .tb-dept-title {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    text-shadow: 0 0 20px rgba(0,174,239,0.5);
+    font-size: clamp(12px, 1.2vw, 16px) !important;
+  }
+  body.gem-v3 #progress-bar {
+    height: 4px !important;
+    background: linear-gradient(90deg, #004A99, #00AEEF, #00ffcc, #00AEEF) !important;
+    background-size: 300% 100% !important;
+    animation: v3Bar 2s linear infinite !important;
+    box-shadow: 0 0 16px rgba(0,174,239,0.8) !important;
+  }
+  @keyframes v3Bar {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+  }
+  body.gem-v3 .rev-panel {
+    border: 2px solid rgba(0,174,239,0.55) !important;
+    border-radius: 16px !important;
+    background: linear-gradient(155deg, rgba(0,45,85,0.95) 0%, rgba(0,12,28,0.98) 100%) !important;
+    box-shadow: 0 0 50px rgba(0,174,239,0.15), 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  }
+  body.gem-v3 .rev-panel::before {
+    height: 5px !important;
+    background: linear-gradient(90deg, #004A99, #00AEEF, #00ffcc, #00AEEF, #004A99) !important;
+    background-size: 200% 100% !important;
+    animation: v3Bar 3s linear infinite !important;
+    opacity: 1 !important;
+  }
+  body.gem-v3 .rev-slide {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+    filter: blur(6px);
+    transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.5s ease !important;
+  }
+  body.gem-v3 .rev-slide.active {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  body.gem-v3 .money-hero .money-num {
+    color: #00AEEF !important;
+    -webkit-text-fill-color: unset !important;
+    background: none !important;
+    text-shadow: 0 0 30px rgba(0,174,239,0.9), 0 0 60px rgba(0,174,239,0.4), 0 2px 0 rgba(255,255,255,0.1) !important;
+    font-weight: 800 !important;
+  }
+  body.gem-v3 .rev-slide-seq {
+    background: linear-gradient(135deg, #00AEEF, #0088cc) !important;
+    box-shadow: 0 0 16px rgba(0,174,239,0.6) !important;
+    font-size: 13px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+  }
+  body.gem-v3 .rev-score-box.actual,
+  body.gem-v3 .rev-ytd-total {
+    border: 1px solid rgba(0,174,239,0.5) !important;
+    box-shadow: 0 0 30px rgba(0,174,239,0.12) !important;
+  }
+  body.gem-v3 .rev-section-bar {
+    background: linear-gradient(90deg, rgba(0,174,239,0.15), transparent) !important;
+    border-left: 4px solid #00AEEF !important;
+    border-radius: 0 8px 8px 0 !important;
+    padding: 8px 12px !important;
+  }
+  body.gem-v3 .rev-col-cap {
+    background: #00AEEF !important;
+    color: #001428 !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.14em !important;
+  }
+  body.gem-v3 .rev-score-head,
+  body.gem-v3 .rev-table-head {
+    background: #004A99 !important;
+    color: #fff !important;
+    border-bottom: 2px solid #00AEEF !important;
+  }
+  body.gem-v3 .rev-row.top-row,
+  body.gem-v3 .rev-score-row.ok:first-child {
+    box-shadow: inset 4px 0 0 #00AEEF !important;
+  }
+  body.gem-v3 #footer {
+    background: #001428 !important;
+    border-top: 2px solid rgba(0,174,239,0.4) !important;
+    padding: 8px 24px !important;
+  }
+  body.gem-v3 .dot-cell.active {
+    background: #00AEEF !important;
+    border-color: #00AEEF !important;
+    box-shadow: 0 0 24px rgba(0,174,239,0.5) !important;
+  }
+  body.gem-v3 .dot-cell.active .dot-lbl {
+    color: #001428 !important;
+    font-weight: 800 !important;
+  }
+  body.gem-v3 #ticker-wrap {
+    border-top: 2px solid #00AEEF !important;
+    background: #001a33 !important;
+  }
+  body.gem-v3 .ticker-label {
+    background: #00AEEF !important;
+    font-size: 11px !important;
+    letter-spacing: 0.14em !important;
+  }
+  body.gem-v3 .rev-milestone.gold {
+    background: linear-gradient(90deg, rgba(0,174,239,0.3), rgba(0,174,239,0.1)) !important;
+    border: 1px solid #00AEEF !important;
+    color: #fff !important;
+    font-size: clamp(12px, 1.2vw, 16px) !important;
+    box-shadow: 0 0 30px rgba(0,174,239,0.2) !important;
+  }
+  body.gem-v3 .rev-candle.up {
+    box-shadow: 0 0 20px rgba(0,174,239,0.5) !important;
+  }
 </style>
 <link rel="icon" href="geminia-mark.png" type="image/png" />
-<link rel="stylesheet" href="revenue.css" />
+<link rel="stylesheet" href="revenue.css?v=3" />
+<link rel="stylesheet" href="theme.css?v=3" />
+<script>document.documentElement.className='gem-v3';</script>
 </head>
-<body>
+<body class="gem-v3">
+
+  <div id="v3-splash" aria-hidden="true">
+    <div id="v3-splash-title">GEMINIA BOARD</div>
+    <div id="v3-splash-sub">PREMIUM COMMAND CENTER · V3</div>
+  </div>
 
   <div id="topbar">
     <div class="tb-left">
@@ -461,10 +747,15 @@
     </div>
     <div class="tb-center">
       <span class="tb-center-line" aria-hidden="true"></span>
-      Premium Performance
+      <div class="tb-center-stack">
+        <span class="tb-dept-title">Premium Performance Dashboard</span>
+        <span class="tb-dept-sub" id="tb-dept">Finance · Live Premium Dashboard · Oracle ERP</span>
+      </div>
+      <span class="tb-fy-pill" id="tb-fy">FY 2026</span>
       <span class="tb-center-line" aria-hidden="true"></span>
     </div>
     <div class="tb-right">
+      <span id="ui-version" title="UI build">✦ V3 LIVE</span>
       <div class="tb-live-block">
         <div class="live-status">
           <div class="status-dot"></div>
@@ -505,6 +796,6 @@
 
   <div id="fullscreen-hint">Click for fullscreen</div>
 
-  <script src="display.js"></script>
+  <script src="display.js?v=3"></script>
 </body>
 </html>

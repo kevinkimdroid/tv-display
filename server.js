@@ -71,7 +71,15 @@ const upload = multer({
 
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, filePath) {
+    if (/\.(html|css|js)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // --- API routes ----------------------------------------------------------
 

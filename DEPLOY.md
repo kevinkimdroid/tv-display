@@ -36,7 +36,7 @@ notepad .env
 Edit `.env` with your Oracle credentials:
 
 ```
-ERP_HOST=10.1.4.101
+ERP_HOST=10.1.6.113
 ERP_PORT=18032
 ERP_SERVICE_NAME=PDBTQUEST
 ERP_USERNAME=TQ_LMS
@@ -144,6 +144,6 @@ If you need port 80 instead of 3000, install IIS + URL Rewrite + ARR and proxy t
 | Problem | Fix |
 |---------|-----|
 | Upload fails | Check `uploads/` folder exists and is writable |
-| No revenue data | Check `.env` Oracle credentials; server must reach `10.1.4.101:18032` |
+| No revenue data | Check `.env` Oracle credentials; server must reach `10.1.6.113:18032` |
 | TV can't connect | Open firewall port 3000; use server IP not `localhost` |
 | App stops after logout | Use PM2 (`pm2 start ecosystem.config.js`) |

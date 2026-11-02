@@ -1,3 +1,5 @@
+const UI_BUILD = 'v3-live';
+
 const stage = document.getElementById('stage');
 const emptyMsg = document.getElementById('empty');
 const clockEl = document.getElementById('clock');
@@ -33,6 +35,49 @@ const SLIDE_LABELS = {
   image: 'MEDIA',
   video: 'MEDIA'
 };
+
+const SLIDE_SHORT = {
+  portfolio: 'Score',
+  ytd: 'YTD',
+  budget: 'Compare',
+  monthly: 'Trend',
+  accounts: 'Products',
+  image: 'Media',
+  video: 'Media'
+};
+
+const SLIDE_SEQ = { portfolio: 1, ytd: 2, budget: 3, monthly: 4, accounts: 5 };
+
+function syncOrgChrome() {
+  const fy = document.getElementById('tb-fy');
+  if (fy && revenueData?.year) fy.textContent = 'FY ' + revenueData.year;
+  const dept = document.getElementById('tb-dept');
+  if (dept) {
+    const thru = revenueData?.budget?.throughLabel;
+    dept.textContent = thru
+      ? 'Finance · Posted through ' + thru + ' · Oracle ERP'
+      : 'Finance · Live Premium Dashboard · Oracle ERP';
+  }
+}
+
+function sectionBar(text, meta = '') {
+  return `
+    <div class="rev-section-bar">
+      <span class="rev-section-bar-accent"></span>
+      <span class="rev-section-bar-text">${text}</span>
+      ${meta ? `<span class="rev-section-bar-meta">${meta}</span>` : ''}
+    </div>`;
+}
+
+function colCap(label) {
+  return `<div class="rev-col-cap">${label}</div>`;
+}
+
+function formatSlideDuration(seconds) {
+  if (!seconds || seconds <= 0) return '';
+  if (seconds >= 60) return Math.round(seconds / 60) + ' min';
+  return seconds + 's';
+}
 
 function formatMoney(n) { return fmt.format(Math.round(n)); }
 
@@ -385,6 +430,7 @@ async function fetchRevenue() {
     const prev = revenueFingerprint(revenueData);
     revenueData = await res.json();
     buildFeed(revenueData);
+    syncOrgChrome();
     updateDataTimestamp(true);
     return prev !== revenueFingerprint(revenueData);
   } catch (err) {
@@ -437,25 +483,45 @@ function updateHud() {
     ? SLIDE_LABELS[item.dashboardType]
     : SLIDE_LABELS[item.type] || 'FEED';
   slideLabelEl.textContent = label;
-  counterEl.textContent = `${currentIndex + 1} / ${slideList.length}`;
-  dotsEl.innerHTML = slideList.map((_, i) =>
-    `<div class="dot${i === currentIndex ? ' active' : ''}"></div>`
-  ).join('');
+  const dur = item.duration && item.duration > 0 ? item.duration : 18;
+  const durTxt = formatSlideDuration(dur);
+  counterEl.textContent = `${currentIndex + 1} / ${slideList.length}${durTxt ? ' · ' + durTxt : ''}`;
+  dotsEl.innerHTML = slideList.map((s, i) => {
+    const lbl = s.type === 'dashboard'
+      ? (SLIDE_SHORT[s.dashboardType] || s.dashboardType)
+      : (SLIDE_SHORT[s.type] || 'Feed');
+    const seq = s.type === 'dashboard' && SLIDE_SEQ[s.dashboardType]
+      ? String(SLIDE_SEQ[s.dashboardType]).padStart(2, '0')
+      : '';
+    return `<div class="dot-cell${i === currentIndex ? ' active' : ''}" aria-label="${lbl}">
+      <span class="dot"></span>
+      ${seq ? `<span class="dot-seq">${seq}</span>` : ''}
+      <span class="dot-lbl">${lbl}</span>
+    </div>`;
+  }).join('');
 }
 
 // --- Slide builders ------------------------------------------------------
 
-function panelHeader(code, title, sub, badge) {
+function panelHeader(code, title, sub, badge, slideKey) {
+  const seq = slideKey && SLIDE_SEQ[slideKey]
+    ? String(SLIDE_SEQ[slideKey]).padStart(2, '0') : '';
   return `
     <div class="rev-header">
       <div class="rev-header-left">
-        <div class="rev-index-code">${code}</div>
+        <div class="rev-header-badge">
+          ${seq ? `<span class="rev-slide-seq">${seq}</span>` : ''}
+          <span class="rev-index-code">${code}</span>
+        </div>
         <div class="rev-header-text">
           <div class="rev-title">${title}</div>
           <div class="rev-subtitle">${sub}</div>
         </div>
       </div>
-      <div class="rev-year-badge">FY ${badge}</div>
+      <div class="rev-header-meta">
+        <span class="rev-source-tag">Oracle ERP · Posted</span>
+        <span class="rev-year-badge">FY ${badge}</span>
+      </div>
     </div>`;
 }
 
@@ -494,7 +560,7 @@ function buildPortfolioSlide(data) {
         ? 'No posted months yet for budget pacing.'
         : 'Budget file loaded but no product segments were built.';
     el.innerHTML = `
-      ${panelHeader('PORTFOLIO', 'Expected vs Actual', 'All products · budget pace', data.year)}
+      ${panelHeader('PORTFOLIO', 'Expected vs Actual', 'All products · budget pace', data.year, 'portfolio')}
       <div class="rev-loading">${reason}</div>`;
     return el;
   }
@@ -536,9 +602,10 @@ function buildPortfolioSlide(data) {
       </div>`;
   }
 
-  function portfolioColumn(list, startRank) {
+  function portfolioColumn(list, startRank, endRank) {
     return `
       <div class="rev-score-table">
+        ${colCap('Products ' + startRank + '–' + endRank)}
         <div class="rev-score-head">
           <span>#</span><span>Product</span><span class="col-money">Expected</span>
           <span class="col-money">Actual</span><span>Pace</span><span class="col-money">Gap</span><span>Progress</span>
@@ -550,7 +617,7 @@ function buildPortfolioSlide(data) {
   }
 
   el.innerHTML = `
-    ${panelHeader('SCOREBOARD', 'Expected vs Actual Premium', 'All ' + products.length + ' products · YTD ' + b.throughLabel + ' · Book5 budget vs Oracle posted', data.year)}
+    ${panelHeader('SCOREBOARD', 'Expected vs Actual Premium', 'All ' + products.length + ' products · YTD ' + b.throughLabel + ' · Book5 budget vs Oracle posted', data.year, 'portfolio')}
     <div class="rev-score-body">
       <div class="rev-score-kpi ${statusClass(s.status)}">
         <div class="rev-score-box expected">
@@ -577,9 +644,11 @@ function buildPortfolioSlide(data) {
         <span class="rev-legend-note">${products.length} products · grey = expected · cyan/red = actual</span>
       </div>
 
+      ${sectionBar('Product performance', products.length + ' lines · ranked by premium volume')}
+
       <div class="rev-score-split">
-        ${portfolioColumn(left, 1)}
-        ${portfolioColumn(right, mid + 1)}
+        ${portfolioColumn(left, 1, mid)}
+        ${portfolioColumn(right, mid + 1, products.length)}
       </div>
     </div>`;
 
@@ -616,7 +685,7 @@ function buildBudgetSlide(data) {
   const b = data.budget;
   if (!b?.lines?.length && !b?.products?.length) {
     el.innerHTML = `
-      ${panelHeader('BUDGET', 'Expected vs Actual', 'No budget file loaded for ' + data.year, data.year)}
+      ${panelHeader('BUDGET', 'Expected vs Actual', 'No budget file loaded for ' + data.year, data.year, 'budget')}
       <div class="rev-loading">Add data/budgets-${data.year}.json to enable comparisons</div>`;
     return el;
   }
@@ -667,7 +736,7 @@ function buildBudgetSlide(data) {
     </svg>`;
 
   el.innerHTML = `
-    ${panelHeader('COMPARE', 'Expected vs Actual', 'YTD ' + b.throughLabel + ' · grey = expected budget · colour = Oracle actual', data.year)}
+    ${panelHeader('COMPARE', 'Expected vs Actual', 'YTD ' + b.throughLabel + ' · grey = expected budget · colour = Oracle actual', data.year, 'budget')}
     <div class="rev-budget-body vs-body tight">
       <div class="rev-score-hero compact ${statusClass(s.status)}">
         <div class="rev-score-box expected">
@@ -730,9 +799,10 @@ function buildYtdSlide(data) {
       </div>`;
   }
 
-  function ytdColumn(list, startRank) {
+  function ytdColumn(list, startRank, endRank) {
     return `
       <div class="rev-index-table-row">
+        ${colCap('Rank ' + startRank + '–' + endRank)}
         <div class="rev-table-head">
           <span>#</span><span>Product Name</span><span class="col-money">Premium</span><span>Share</span>
         </div>
@@ -743,7 +813,7 @@ function buildYtdSlide(data) {
   }
 
   el.innerHTML = `
-    ${panelHeader('YTD', 'Year-to-Date Premium Summary', 'Posted premium · ' + data.year, data.year)}
+    ${panelHeader('YTD', 'Year-to-Date Premium Summary', 'Posted premium · ' + data.year, data.year, 'ytd')}
     <div class="rev-ytd-body">
       ${milestone ? `<div class="rev-milestone ${milestone.cls}">${milestone.text}</div>` : ''}
 
@@ -778,10 +848,11 @@ function buildYtdSlide(data) {
         </div>
       </div>
 
-      <div class="rev-section-head">All Products by Premium · ${data.accountCount} accounts</div>
+      ${sectionBar('Portfolio breakdown', data.accountCount + ' products · share of YTD total')}
+
       <div class="rev-ytd-split">
-        ${ytdColumn(left, 1)}
-        ${ytdColumn(right, mid + 1)}
+        ${ytdColumn(left, 1, mid)}
+        ${ytdColumn(right, mid + 1, sorted.length)}
       </div>
     </div>`;
 
@@ -829,9 +900,10 @@ function buildMonthlySlide(data) {
     : [months];
 
   el.innerHTML = `
-    ${panelHeader('MONTHLY', 'Monthly Premium Trend', 'Posted premium by accounting period', data.year)}
+    ${panelHeader('MONTHLY', 'Monthly Premium Trend', 'Posted premium by accounting period', data.year, 'monthly')}
     <div class="rev-monthly-body">
       ${best ? `<div class="rev-milestone green">Best: ${best.shortLabel} — ${moneyHtml(best.amount, { sm: true })}</div>` : ''}
+      ${sectionBar('Period analysis', months.length + ' posted months · growth vs prior period')}
       <div class="rev-monthly-charts${chartRows.length > 1 ? ' split' : ''}">
         ${chartRows.map((row) => `
           <div class="rev-chart-area">${row.map(candleCol).join('')}</div>
@@ -881,9 +953,10 @@ function buildAccountsSlide(data) {
       </div>`;
   }
 
-  function accountColumn(list, startRank) {
+  function accountColumn(list, startRank, endRank) {
     return `
       <div class="rev-index-table-row">
+        ${colCap('Products ' + startRank + '–' + endRank)}
         <div class="rev-table-head">
           <span>#</span><span>Product Name</span><span class="col-money">Premium</span><span>Share</span>
         </div>
@@ -894,12 +967,12 @@ function buildAccountsSlide(data) {
   }
 
   el.innerHTML = `
-    ${panelHeader('ACCOUNTS', 'All Products by Premium', data.accountCount + ' accounts · full portfolio', data.year)}
+    ${panelHeader('ACCOUNTS', 'All Products by Premium', data.accountCount + ' accounts · full portfolio', data.year, 'accounts')}
     <div class="rev-accounts-body">
-      <div class="rev-section-head">All Products by Premium · ${data.accountCount} accounts · YTD ${formatMoney(data.ytdTotal)}</div>
+      ${sectionBar('Full product register', 'YTD ' + formatMoney(data.ytdTotal) + ' · ranked by premium')}
       <div class="rev-accounts-split">
-        ${accountColumn(left, 1)}
-        ${accountColumn(right, mid + 1)}
+        ${accountColumn(left, 1, mid)}
+        ${accountColumn(right, mid + 1, sorted.length)}
       </div>
     </div>`;
   requestAnimationFrame(() => fitSlide(el));
@@ -978,6 +1051,7 @@ function advance() {
 }
 
 refreshAll();
+console.info('Geminia Premium Board', UI_BUILD);
 
 document.addEventListener('click', () => {
   fullscreenHint.classList.add('hidden');

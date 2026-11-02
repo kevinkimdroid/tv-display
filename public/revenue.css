@@ -65,12 +65,15 @@
 .rev-slide.active { opacity: 1; }
 
 .rev-panel {
-  border: 1px solid rgba(0, 174, 239, 0.18);
-  background: linear-gradient(165deg, rgba(0, 40, 72, 0.97) 0%, rgba(0, 18, 36, 0.99) 100%);
-  border-radius: 8px;
+  border: 1px solid rgba(0, 174, 239, 0.22);
+  background:
+    linear-gradient(165deg, rgba(0, 40, 72, 0.97) 0%, rgba(0, 18, 36, 0.99) 100%);
+  border-radius: 10px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -80,9 +83,9 @@
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--gem-cyan, #00AEEF);
-  opacity: 0.5;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gem-navy, #004A99), var(--gem-cyan, #00AEEF) 45%, var(--gem-cyan-light, #4DC4F5));
+  opacity: 0.85;
 }
 .rev-panel::after {
   content: '';
@@ -102,11 +105,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(0, 174, 239, 0.12);
   flex-shrink: 0;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.15);
+  background: linear-gradient(180deg, rgba(0, 32, 64, 0.45) 0%, rgba(0, 0, 0, 0.1) 100%);
   min-height: 44px;
 }
 .rev-header-left {
@@ -115,6 +118,46 @@
   gap: 10px;
   min-width: 0;
   flex: 1;
+}
+.rev-header-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.rev-slide-seq {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-money);
+  color: var(--gem-navy-deeper, #001833);
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  background: var(--gem-cyan, #00AEEF);
+  box-shadow: 0 0 12px rgba(0, 174, 239, 0.25);
+}
+.rev-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.rev-source-tag {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gem-muted);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
 }
 .rev-header-text {
   min-width: 0;
@@ -341,6 +384,55 @@
   flex-shrink: 0;
 }
 
+/* Structured section divider */
+.rev-section-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 4px 0 2px;
+  min-height: 22px;
+}
+.rev-section-bar-accent {
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--gem-cyan), var(--gem-navy));
+  flex-shrink: 0;
+}
+.rev-section-bar-text {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gem-label);
+}
+.rev-section-bar-meta {
+  margin-left: auto;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--gem-muted);
+  font-family: var(--font-money);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Split-table column caption */
+.rev-col-cap {
+  flex-shrink: 0;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gem-cyan);
+  padding: 5px 10px;
+  background: rgba(0, 174, 239, 0.06);
+  border-bottom: 1px solid rgba(0, 174, 239, 0.15);
+  text-align: center;
+}
+
 /* Table */
 .rev-index-table-row {
   flex: 1;
@@ -357,8 +449,8 @@
   display: grid;
   grid-template-columns: 36px minmax(0, 1.4fr) minmax(110px, 1.35fr) 56px;
   padding: 7px 12px;
-  background: rgba(0, 43, 92, 0.65);
-  border-bottom: 1px solid rgba(0, 174, 239, 0.2);
+  background: linear-gradient(180deg, rgba(0, 53, 102, 0.75) 0%, rgba(0, 43, 92, 0.65) 100%);
+  border-bottom: 1px solid rgba(0, 174, 239, 0.25);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -366,7 +458,11 @@
   text-transform: uppercase;
   flex-shrink: 0;
 }
-.rev-table-head .col-money { text-align: right; }
+.rev-table-head .col-money {
+  text-align: right;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  padding-left: 8px;
+}
 .rev-table-body {
   flex: 1;
   min-height: 0;
@@ -406,6 +502,7 @@
   font-weight: 700;
 }
 .rev-row:nth-child(even):not(.top-row) { background: rgba(255, 255, 255, 0.025); }
+.rev-row:hover { background: rgba(0, 174, 239, 0.04); }
 
 .rev-rank {
   display: flex;
@@ -1231,6 +1328,10 @@
   gap: 8px;
   flex-shrink: 0;
   flex-wrap: wrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .rev-score-flags .rev-legend-note {
   margin-left: auto;
@@ -1264,8 +1365,12 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--gem-muted);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(0, 174, 239, 0.2);
+  background: linear-gradient(180deg, rgba(0, 53, 102, 0.75) 0%, rgba(0, 43, 92, 0.55) 100%);
+}
+.rev-score-head .col-money {
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  padding-left: 4px;
 }
 .rev-score-rows {
   flex: 1;
@@ -1335,6 +1440,19 @@
 }
 .rev-slide-portfolio .rev-score-box {
   padding: 6px 10px;
+  border-left: 3px solid rgba(255, 255, 255, 0.12);
+}
+.rev-slide-portfolio .rev-score-box.expected {
+  border-left-color: rgba(155, 184, 212, 0.7);
+}
+.rev-slide-portfolio .rev-score-box.actual {
+  border-left-color: var(--gem-cyan);
+}
+.rev-slide-portfolio .rev-score-box.gap.ok {
+  border-left-color: var(--gem-cyan);
+}
+.rev-slide-portfolio .rev-score-box.gap.fail {
+  border-left-color: #E53935;
 }
 .rev-slide-portfolio .rev-score-tag {
   font-size: 9px;
@@ -1634,6 +1752,10 @@
 .rev-strip-compact {
   flex-shrink: 0;
   gap: 6px;
+  padding: 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .rev-strip-compact .rev-strip-item {
   padding: 5px 8px;
@@ -1809,6 +1931,24 @@
   .rev-year-badge {
     font-size: 13px;
     padding: 6px 12px;
+  }
+
+  .rev-section-bar-text {
+    font-size: clamp(10px, 0.95vw, 12px);
+  }
+  .rev-section-bar-meta {
+    font-size: clamp(9px, 0.85vw, 11px);
+  }
+  .rev-col-cap {
+    font-size: 9px;
+  }
+  .rev-slide-seq {
+    min-width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+  .rev-source-tag {
+    font-size: 10px;
   }
 
   /* Portfolio split columns on large TVs */

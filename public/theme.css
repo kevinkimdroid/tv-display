@@ -1,0 +1,9 @@
+/* Geminia Board V3 — accent layer */
+body.gem-v3 .live-status { color: #00ffcc !important; }
+body.gem-v3 .status-dot { background: #00ffcc !important; box-shadow: 0 0 12px #00ffcc !important; }
+body.gem-v3 .tick-val { color: #00ffcc !important; font-weight: 700 !important; }
+body.gem-v3 .rev-score-num.accent .money-num { color: #00ffcc !important; text-shadow: 0 0 20px rgba(0,255,204,0.5); }
+body.gem-v3 .rev-flag.ok { background: rgba(0,255,204,0.15) !important; color: #00ffcc !important; }
+body.gem-v3 .rev-chg.up { color: #00ffcc !important; }
+body.gem-v3 #slide-label::before { background: #00ffcc !important; box-shadow: 0 0 10px #00ffcc; }
+body.gem-v3 .rev-chart-area { border-color: rgba(0,174,239,0.4) !important; }

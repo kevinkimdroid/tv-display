@@ -243,7 +243,7 @@ UPLOAD PHOTOS/VIDEOS
 REQUIREMENTS
 ------------
    - Node.js 18+ (https://nodejs.org)
-   - Network access to Oracle ERP (10.1.4.101:18032)
+   - Network access to Oracle ERP (10.1.6.113:18032)
    - Port 3000 open in firewall
 
 DO NOT UPLOAD
